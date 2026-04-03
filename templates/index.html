@@ -15,10 +15,7 @@
     header h1 { font-size: 1.5rem; font-weight: 600; }
     header p  { font-size: 0.875rem; opacity: 0.85; margin-top: 4px; }
 
-    main {
-      max-width: 860px; margin: 32px auto; padding: 0 16px;
-      display: flex; flex-direction: column; gap: 24px;
-    }
+    main { max-width: 900px; margin: 32px auto; padding: 0 16px; display: flex; flex-direction: column; gap: 24px; }
 
     .card {
       background: white; border-radius: 12px; padding: 28px;
@@ -36,15 +33,14 @@
 
     /* Drop zone */
     .drop-zone {
-      border: 2px dashed #c5cae9; border-radius: 10px;
-      padding: 40px 20px; text-align: center; cursor: pointer;
-      transition: all 0.2s; background: #fafbff;
+      border: 2px dashed #c5cae9; border-radius: 10px; padding: 40px 20px;
+      text-align: center; cursor: pointer; transition: all 0.2s; background: #fafbff;
     }
     .drop-zone:hover, .drop-zone.drag-over { border-color: #1a73e8; background: #e8f0fe; }
-    .drop-zone svg   { color: #9aa0c7; margin-bottom: 10px; }
-    .drop-zone p     { color: #555; font-size: 0.9rem; }
-    .drop-zone span  { color: #1a73e8; font-weight: 600; }
-    #file-input      { display: none; }
+    .drop-zone svg  { color: #9aa0c7; margin-bottom: 10px; }
+    .drop-zone p    { color: #555; font-size: 0.9rem; }
+    .drop-zone span { color: #1a73e8; font-weight: 600; }
+    #file-input { display: none; }
 
     #file-list { margin-top: 14px; display: flex; flex-direction: column; gap: 8px; }
     .file-item {
@@ -55,37 +51,23 @@
     .file-item .file-name { font-weight: 500; flex: 1; }
     .file-item .file-meta { color: #777; font-size: 0.78rem; }
 
-    /* Sheet selector panel */
+    /* Sheet panel */
     #sheet-panel { margin-top: 20px; }
     .sheet-panel-title {
       font-size: 0.875rem; font-weight: 600; color: #444;
       margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
     }
-    .sheet-panel-title svg { color: #1a73e8; }
     .sheet-rows { display: flex; flex-direction: column; gap: 8px; }
     .sheet-row {
       display: flex; align-items: center; gap: 12px;
       background: #f8f9fc; border: 1px solid #e4e8f5;
-      border-radius: 8px; padding: 10px 14px;
-      flex-wrap: wrap;
+      border-radius: 8px; padding: 10px 14px; flex-wrap: wrap;
     }
-    .sheet-row .sr-filename {
-      font-size: 0.85rem; font-weight: 500; flex: 1; min-width: 160px;
-      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    }
-    .sheet-row .sr-badge {
-      font-size: 0.72rem; background: #e8f0fe; color: #1a73e8;
-      border-radius: 12px; padding: 2px 8px; white-space: nowrap;
-    }
-    .sheet-row select {
-      padding: 6px 10px; border: 1px solid #c5cae9;
-      border-radius: 6px; font-size: 0.82rem; outline: none;
-      background: white; min-width: 160px; cursor: pointer;
-    }
+    .sheet-row .sr-filename { font-size: 0.85rem; font-weight: 500; flex: 1; min-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sheet-row .sr-badge    { font-size: 0.72rem; background: #e8f0fe; color: #1a73e8; border-radius: 12px; padding: 2px 8px; white-space: nowrap; }
+    .sheet-row select       { padding: 6px 10px; border: 1px solid #c5cae9; border-radius: 6px; font-size: 0.82rem; outline: none; background: white; min-width: 160px; }
     .sheet-row select:focus { border-color: #1a73e8; }
-    .sheet-row .sr-single {
-      font-size: 0.82rem; color: #666; font-style: italic;
-    }
+    .sheet-row .sr-single   { font-size: 0.82rem; color: #666; font-style: italic; }
 
     /* Buttons */
     .btn {
@@ -97,9 +79,12 @@
     .btn-primary  { background: #1a73e8; color: white; }
     .btn-primary:hover  { background: #1558c0; }
     .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-    .btn-success  { background: #34a853; color: white; }
-    .btn-success:hover  { background: #2d8f46; }
-    .btn-success:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-analyze  { background: #e37400; color: white; }
+    .btn-analyze:hover  { background: #c46200; }
+    .btn-analyze:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-confirm  { background: #34a853; color: white; }
+    .btn-confirm:hover  { background: #2d8f46; }
+    .btn-confirm:disabled { opacity: 0.5; cursor: not-allowed; }
     .btn-download { background: #fbbc04; color: #333; }
     .btn-download:hover { background: #f0a800; }
     .btn-sm     { padding: 7px 14px; font-size: 0.8rem; border-radius: 6px; }
@@ -108,51 +93,30 @@
 
     /* Columns */
     .columns-toolbar {
-      display: flex; gap: 8px; margin-bottom: 12px;
-      flex-wrap: wrap; align-items: center;
+      display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; align-items: center;
     }
     .columns-toolbar input[type="text"] {
       flex: 1; min-width: 180px; padding: 8px 12px;
-      border: 1px solid #d0d5e8; border-radius: 8px;
-      font-size: 0.85rem; outline: none;
+      border: 1px solid #d0d5e8; border-radius: 8px; font-size: 0.85rem; outline: none;
     }
     .columns-toolbar input:focus { border-color: #1a73e8; }
+    .drag-hint { font-size: 0.77rem; color: #888; margin-bottom: 10px; display: flex; align-items: center; gap: 5px; }
 
-    .drag-hint {
-      font-size: 0.77rem; color: #888; margin-bottom: 10px;
-      display: flex; align-items: center; gap: 5px;
-    }
-
-    #columns-list {
-      display: flex; flex-direction: column; gap: 6px;
-      max-height: 360px; overflow-y: auto; padding: 2px;
-    }
-
+    #columns-list { display: flex; flex-direction: column; gap: 6px; max-height: 360px; overflow-y: auto; padding: 2px; }
     .col-item {
-      display: flex; align-items: center; gap: 10px;
-      padding: 9px 12px; border: 1px solid #e0e4f0;
-      border-radius: 8px; background: white;
-      font-size: 0.85rem; user-select: none;
-      transition: border-color 0.15s, background 0.15s;
+      display: flex; align-items: center; gap: 10px; padding: 9px 12px;
+      border: 1px solid #e0e4f0; border-radius: 8px; background: white;
+      font-size: 0.85rem; user-select: none; transition: border-color 0.15s, background 0.15s;
     }
-    .col-item:hover           { border-color: #1a73e8; background: #f0f6ff; }
-    .col-item.checked         { border-color: #1a73e8; background: #e8f0fe; }
-    .col-item.dragging        { opacity: 0.4; }
-    .col-item.drag-over-top   { border-top: 2px solid #1a73e8; }
-    .col-item.drag-over-bottom{ border-bottom: 2px solid #1a73e8; }
-
-    .drag-handle {
-      cursor: grab; color: #aaa; flex-shrink: 0;
-      display: flex; align-items: center;
-      padding: 2px 4px; border-radius: 4px;
-    }
+    .col-item:hover            { border-color: #1a73e8; background: #f0f6ff; }
+    .col-item.checked          { border-color: #1a73e8; background: #e8f0fe; }
+    .col-item.dragging         { opacity: 0.4; }
+    .col-item.drag-over-top    { border-top: 2px solid #1a73e8; }
+    .col-item.drag-over-bottom { border-bottom: 2px solid #1a73e8; }
+    .drag-handle { cursor: grab; color: #aaa; flex-shrink: 0; display: flex; align-items: center; padding: 2px 4px; border-radius: 4px; }
     .drag-handle:hover  { color: #1a73e8; background: #dce8fc; }
     .drag-handle:active { cursor: grabbing; }
-
-    .col-item input[type="checkbox"] {
-      width: 16px; height: 16px; accent-color: #1a73e8;
-      cursor: pointer; flex-shrink: 0;
-    }
+    .col-item input[type="checkbox"] { width: 16px; height: 16px; accent-color: #1a73e8; cursor: pointer; flex-shrink: 0; }
     .col-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .col-order { font-size: 0.72rem; color: #aaa; flex-shrink: 0; min-width: 18px; text-align: right; }
 
@@ -160,16 +124,98 @@
     .dedup-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
     .dedup-row label { font-size: 0.875rem; color: #444; }
     .dedup-row select {
-      padding: 8px 12px; border: 1px solid #d0d5e8;
-      border-radius: 8px; font-size: 0.85rem;
-      outline: none; background: white; min-width: 200px;
+      padding: 8px 12px; border: 1px solid #d0d5e8; border-radius: 8px;
+      font-size: 0.85rem; outline: none; background: white; min-width: 200px;
     }
     .dedup-row select:focus { border-color: #1a73e8; }
 
+    /* Review card */
+    #review-card { border-left: 4px solid #e37400; }
+    #review-card h2 { color: #e37400; }
+    #review-card h2 .step { background: #e37400; }
+
+    .review-section { margin-bottom: 28px; }
+    .review-section-title {
+      font-size: 0.9rem; font-weight: 600; color: #333;
+      margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
+    }
+    .review-section-title .badge {
+      background: #e37400; color: white; font-size: 0.72rem;
+      padding: 2px 8px; border-radius: 12px;
+    }
+
+    /* Similarity review */
+    .sim-col-block { margin-bottom: 14px; border: 1px solid #e8e8e8; border-radius: 10px; overflow: hidden; }
+    .sim-col-header {
+      background: #f5f5f5; padding: 10px 14px; font-size: 0.85rem;
+      font-weight: 600; display: flex; align-items: center; gap: 8px; cursor: pointer;
+    }
+    .sim-col-header:hover { background: #ececec; }
+    .sim-col-body { padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+    .sim-group-row {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 8px 10px; background: #fafafa; border-radius: 8px; border: 1px solid #eee;
+    }
+    .sim-group-row input[type="checkbox"] { margin-top: 3px; accent-color: #e37400; flex-shrink: 0; }
+    .sim-group-content { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+    .sim-group-label { font-size: 0.78rem; color: #777; }
+    .sim-canonical-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .sim-canonical-row span { font-size: 0.78rem; color: #555; }
+    .sim-canonical-row input[type="text"] {
+      padding: 4px 10px; border: 1px solid #c5cae9; border-radius: 6px;
+      font-size: 0.85rem; outline: none; width: 180px;
+    }
+    .sim-canonical-row input:focus { border-color: #e37400; }
+    .sim-variants { display: flex; flex-wrap: wrap; gap: 6px; }
+    .sim-variant-chip {
+      background: #fff3e0; color: #e37400; border: 1px solid #ffcc80;
+      border-radius: 12px; padding: 2px 10px; font-size: 0.78rem;
+    }
+
+    /* Duplicate review */
+    .dup-group-card {
+      border: 1px solid #e0e4f0; border-radius: 10px;
+      margin-bottom: 14px; overflow: hidden;
+    }
+    .dup-group-header {
+      background: #f5f7ff; padding: 10px 14px; font-size: 0.85rem;
+      font-weight: 600; display: flex; align-items: center; gap: 10px;
+    }
+    .dup-group-header .src-badges { display: flex; gap: 6px; flex-wrap: wrap; }
+    .src-badge {
+      font-size: 0.72rem; padding: 2px 8px; border-radius: 12px; font-weight: 500;
+    }
+    .src-badge-0 { background: #e8f0fe; color: #1a73e8; }
+    .src-badge-1 { background: #e6f4ea; color: #34a853; }
+    .src-badge-2 { background: #fce8e6; color: #ea4335; }
+    .src-badge-3 { background: #fff3e0; color: #e37400; }
+
+    .dup-table-wrap { overflow-x: auto; }
+    .dup-table {
+      width: 100%; border-collapse: collapse; font-size: 0.82rem;
+    }
+    .dup-table th {
+      background: #f8f9fc; padding: 8px 10px; text-align: left;
+      border-bottom: 1px solid #e0e4f0; white-space: nowrap; color: #555;
+    }
+    .dup-table td {
+      padding: 8px 10px; border-bottom: 1px solid #f0f0f0;
+      max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .dup-table tr:last-child td { border-bottom: none; }
+    .dup-table tr.selected-row td { background: #e8f0fe; }
+    .dup-radio { accent-color: #1a73e8; cursor: pointer; }
+    .dup-keep-all-row { padding: 8px 14px; background: #f9f9f9; border-top: 1px solid #eee; }
+    .dup-keep-all-row label { font-size: 0.82rem; color: #555; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+
+    .truncation-warning {
+      background: #fff3e0; border: 1px solid #ffcc80; border-radius: 8px;
+      padding: 10px 14px; font-size: 0.82rem; color: #7a4400; margin-bottom: 14px;
+    }
+
     /* Result */
     .result-box {
-      background: #e6f4ea; border: 1px solid #81c995;
-      border-radius: 10px; padding: 20px;
+      background: #e6f4ea; border: 1px solid #81c995; border-radius: 10px; padding: 20px;
     }
     .result-stats { display: flex; gap: 24px; margin-bottom: 16px; flex-wrap: wrap; }
     .stat { display: flex; flex-direction: column; align-items: center; }
@@ -180,8 +226,7 @@
 
     .hidden { display: none !important; }
     .spinner {
-      width: 18px; height: 18px;
-      border: 2px solid rgba(255,255,255,0.4);
+      width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.4);
       border-top-color: white; border-radius: 50%;
       animation: spin 0.7s linear infinite; display: inline-block;
     }
@@ -200,10 +245,9 @@
 
 <main>
 
-  <!-- PASO 1 -->
+  <!-- PASO 1: Upload -->
   <div class="card">
     <h2><span class="step">1</span> Sube tus archivos</h2>
-
     <div class="drop-zone" id="drop-zone">
       <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round"
@@ -212,16 +256,13 @@
       <p>Arrastra archivos aquí o <span id="browse-btn">haz clic para seleccionar</span></p>
       <p style="font-size:0.78rem;color:#999;margin-top:6px;">Formatos: .xlsx, .xls, .csv</p>
     </div>
-
     <input type="file" id="file-input" multiple accept=".xlsx,.xls,.csv" />
     <div id="file-list"></div>
 
-    <!-- Sheet selector (shown after upload) -->
     <div id="sheet-panel" class="hidden">
       <div class="sheet-panel-title">
         <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round"
-            d="M3 7h18M3 12h18M3 17h18"/>
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3 7h18M3 12h18M3 17h18"/>
         </svg>
         Selecciona la hoja a usar de cada archivo
       </div>
@@ -239,79 +280,104 @@
     <div id="upload-error" class="alert alert-error hidden"></div>
   </div>
 
-  <!-- PASO 2 -->
+  <!-- PASO 2: Columnas -->
   <div class="card hidden" id="columns-card">
     <h2><span class="step">2</span> Selecciona y ordena las columnas</h2>
-
     <div class="columns-toolbar">
       <input type="text" id="col-search" placeholder="Buscar columna..." />
       <button class="btn btn-outline btn-sm" id="select-all-btn">Seleccionar todo</button>
       <button class="btn btn-outline btn-sm" id="deselect-all-btn">Deseleccionar todo</button>
     </div>
-
     <div class="drag-hint">
       <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" d="M8 9h8M8 12h8M8 15h8"/>
       </svg>
       Arrastra las filas para cambiar el orden de las columnas en el resultado
     </div>
-
     <div id="columns-list"></div>
 
     <div style="margin-top:20px;display:flex;flex-direction:column;gap:16px;">
-
       <div>
         <p style="font-size:0.875rem;color:#444;margin-bottom:10px;font-weight:600;">Eliminar duplicados por columna (opcional)</p>
         <div class="dedup-row">
           <label for="dedup-select">Columna clave:</label>
-          <select id="dedup-select">
-            <option value="">— Fila completa —</option>
-          </select>
+          <select id="dedup-select"><option value="">— Fila completa —</option></select>
         </div>
         <p style="font-size:0.77rem;color:#888;margin-top:6px;">Si eliges una columna, se eliminan filas con el mismo valor en esa columna.</p>
       </div>
-
       <div>
         <p style="font-size:0.875rem;color:#444;margin-bottom:10px;font-weight:600;">En caso de duplicado, ¿qué archivo prevalece?</p>
         <div class="dedup-row">
           <label for="priority-select">Archivo prioritario:</label>
-          <select id="priority-select">
-            <option value="">— El primero subido —</option>
-          </select>
+          <select id="priority-select"><option value="">— El primero subido —</option></select>
         </div>
-        <p style="font-size:0.77rem;color:#888;margin-top:6px;">Los datos del archivo elegido reemplazarán a los del resto cuando haya un registro duplicado.</p>
+        <p style="font-size:0.77rem;color:#888;margin-top:6px;">Sus columnas también se usan como orden de referencia y sus datos prevalecen en duplicados.</p>
       </div>
-
     </div>
 
     <div class="action-row">
-      <button class="btn btn-success" id="merge-btn">
+      <button class="btn btn-analyze" id="analyze-btn">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+          <circle cx="11" cy="11" r="8"/><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.35-4.35"/>
         </svg>
-        Unificar y descargar
+        Analizar y revisar
       </button>
     </div>
-    <div id="merge-error" class="alert alert-error hidden"></div>
+    <div id="analyze-error" class="alert alert-error hidden"></div>
   </div>
 
-  <!-- PASO 3 -->
+  <!-- PASO 2.5: Revisión -->
+  <div class="card hidden" id="review-card">
+    <h2><span class="step">!</span> Revisión de datos</h2>
+
+    <!-- Similarity section -->
+    <div class="review-section hidden" id="sim-section">
+      <div class="review-section-title">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21 3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5"/>
+        </svg>
+        Valores similares detectados
+        <span class="badge" id="sim-badge">0</span>
+      </div>
+      <p style="font-size:0.8rem;color:#666;margin-bottom:14px;">Estos valores parecen ser el mismo escrito de forma distinta. Edita el valor canónico y activa los que quieras unificar.</p>
+      <div id="sim-body"></div>
+    </div>
+
+    <!-- Duplicates section -->
+    <div class="review-section hidden" id="dup-section">
+      <div class="review-section-title">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <rect x="9" y="9" width="13" height="13" rx="2"/><path stroke-linecap="round" stroke-linejoin="round" d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+        </svg>
+        Registros duplicados
+        <span class="badge" id="dup-badge">0</span>
+      </div>
+      <p style="font-size:0.8rem;color:#666;margin-bottom:14px;">Elige cuál registro conservar en cada grupo. Por defecto se conserva el del archivo prioritario.</p>
+      <div id="dup-truncation-warning" class="truncation-warning hidden">
+        ⚠️ Se encontraron más de 50 grupos de duplicados. Solo se muestran los primeros 50. Los restantes se resolverán conservando el registro del archivo prioritario (o el primero si no hay prioritario).
+      </div>
+      <div id="dup-body"></div>
+    </div>
+
+    <div class="action-row">
+      <button class="btn btn-confirm" id="confirm-btn">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+        </svg>
+        Confirmar y generar Excel
+      </button>
+    </div>
+    <div id="confirm-error" class="alert alert-error hidden"></div>
+  </div>
+
+  <!-- PASO 3: Resultado -->
   <div class="card hidden" id="result-card">
     <h2><span class="step">3</span> Resultado</h2>
     <div class="result-box">
       <div class="result-stats">
-        <div class="stat good">
-          <span class="value" id="stat-rows">0</span>
-          <span class="label">Filas totales</span>
-        </div>
-        <div class="stat">
-          <span class="value" id="stat-cols">0</span>
-          <span class="label">Columnas</span>
-        </div>
-        <div class="stat warn">
-          <span class="value" id="stat-dups">0</span>
-          <span class="label">Duplicados eliminados</span>
-        </div>
+        <div class="stat good"><span class="value" id="stat-rows">0</span><span class="label">Filas totales</span></div>
+        <div class="stat"><span class="value" id="stat-cols">0</span><span class="label">Columnas</span></div>
+        <div class="stat warn"><span class="value" id="stat-dups">0</span><span class="label">Duplicados eliminados</span></div>
       </div>
       <button class="btn btn-download" id="download-btn">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -320,14 +386,13 @@
         Descargar Excel
       </button>
     </div>
-    <button class="btn btn-outline btn-sm" id="restart-btn" style="margin-top:14px;">
-      Procesar nuevos archivos
-    </button>
+    <button class="btn btn-outline btn-sm" id="restart-btn" style="margin-top:14px;">Procesar nuevos archivos</button>
   </div>
 
 </main>
 
 <script>
+  // ── Element refs ──────────────────────────────────────────────────
   const dropZone    = document.getElementById('drop-zone');
   const fileInput   = document.getElementById('file-input');
   const fileList    = document.getElementById('file-list');
@@ -342,17 +407,26 @@
   const deselAllBtn = document.getElementById('deselect-all-btn');
   const dedupSel    = document.getElementById('dedup-select');
   const prioritySel = document.getElementById('priority-select');
-  const mergeBtn    = document.getElementById('merge-btn');
+  const analyzeBtn  = document.getElementById('analyze-btn');
+  const reviewCard  = document.getElementById('review-card');
+  const simSection  = document.getElementById('sim-section');
+  const dupSection  = document.getElementById('dup-section');
+  const simBody     = document.getElementById('sim-body');
+  const dupBody     = document.getElementById('dup-body');
+  const confirmBtn  = document.getElementById('confirm-btn');
   const resultCard  = document.getElementById('result-card');
   const uploadErr   = document.getElementById('upload-error');
-  const mergeErr    = document.getElementById('merge-error');
+  const analyzeErr  = document.getElementById('analyze-error');
+  const confirmErr  = document.getElementById('confirm-error');
   const downloadBtn = document.getElementById('download-btn');
   const restartBtn  = document.getElementById('restart-btn');
 
+  // ── State ─────────────────────────────────────────────────────────
   let selectedFiles   = [];
   let storedFileData  = [];
   let storedStyles    = {};
-  let storedFilesInfo = [];   // [{name, sheets, default_sheet}]
+  let storedFilesInfo = [];
+  let previewData     = null;
   let pendingDownload = null;
 
   // ── File drag & drop ──────────────────────────────────────────────
@@ -402,19 +476,15 @@
     uploadErr.classList.add('hidden');
     uploadBtn.innerHTML = '<span class="spinner"></span> Cargando...';
     uploadBtn.disabled = true;
-
     const form = new FormData();
     selectedFiles.forEach(f => form.append('files', f));
-
     try {
       const res  = await fetch('/upload', { method: 'POST', body: form });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error al cargar');
-
       storedFileData  = data.file_data;
       storedStyles    = data.column_styles || {};
       storedFilesInfo = data.files;
-
       renderSheetSelectors(data.files);
       refreshColumnsFromSheets();
       populatePrioritySelect(data.files);
@@ -424,8 +494,7 @@
       uploadErr.textContent = e.message;
       uploadErr.classList.remove('hidden');
     } finally {
-      uploadBtn.innerHTML = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2M16 8l-4-4-4 4M12 4v12"/></svg> Cargar archivos`;
+      uploadBtn.innerHTML = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2M16 8l-4-4-4 4M12 4v12"/></svg> Cargar archivos`;
       uploadBtn.disabled = false;
     }
   });
@@ -434,79 +503,58 @@
   function renderSheetSelectors(files) {
     sheetRows.innerHTML = '';
     const hasMulti = files.some(f => Object.keys(f.sheets).length > 1);
-
-    if (!hasMulti) {
-      sheetPanel.classList.add('hidden');
-      return;
-    }
+    if (!hasMulti) { sheetPanel.classList.add('hidden'); return; }
     sheetPanel.classList.remove('hidden');
-
     files.forEach(fi => {
       const sheetNames = Object.keys(fi.sheets);
       const row = document.createElement('div');
       row.className = 'sheet-row';
-
-      const totalSheets = sheetNames.length;
-      const defaultRows = fi.sheets[fi.default_sheet]?.rows ?? '?';
-
-      if (totalSheets === 1) {
-        row.innerHTML = `
-          <span class="sr-filename">${fi.name}</span>
-          <span class="sr-single">${sheetNames[0]}</span>
-          <span class="sr-badge">${defaultRows} filas</span>`;
+      if (sheetNames.length === 1) {
+        const r = fi.sheets[sheetNames[0]]?.rows ?? '?';
+        row.innerHTML = `<span class="sr-filename">${fi.name}</span><span class="sr-single">${sheetNames[0]}</span><span class="sr-badge">${r} filas</span>`;
       } else {
         const opts = sheetNames.map(sn => {
           const r = fi.sheets[sn]?.rows ?? '?';
-          const sel = sn === fi.default_sheet ? ' selected' : '';
-          return `<option value="${sn}"${sel}>${sn} (${r} filas)</option>`;
+          return `<option value="${sn}"${sn === fi.default_sheet ? ' selected' : ''}>${sn} (${r} filas)</option>`;
         }).join('');
-        row.innerHTML = `
-          <span class="sr-filename">${fi.name}</span>
-          <select data-file="${fi.name}" class="sheet-select">${opts}</select>`;
-        row.querySelector('.sheet-select').addEventListener('change', refreshColumnsFromSheets);
+        row.innerHTML = `<span class="sr-filename">${fi.name}</span><select data-file="${fi.name}" class="sheet-select">${opts}</select>`;
+        row.querySelector('.sheet-select').addEventListener('change', () => {
+          invalidateReview();
+          refreshColumnsFromSheets();
+          // Re-apply priority order if priority is set
+          if (prioritySel.value) reorderByPriority(prioritySel.value);
+        });
       }
       sheetRows.appendChild(row);
     });
   }
 
   function getSheetSelection() {
-    // Returns {filename: sheetName} for files that have a selector
     const sel = {};
-    document.querySelectorAll('.sheet-select').forEach(s => {
-      sel[s.dataset.file] = s.value;
-    });
-    // Fill in default for files without a selector (single sheet)
-    storedFilesInfo.forEach(fi => {
-      if (!sel[fi.name]) sel[fi.name] = fi.default_sheet;
-    });
+    document.querySelectorAll('.sheet-select').forEach(s => { sel[s.dataset.file] = s.value; });
+    storedFilesInfo.forEach(fi => { if (!sel[fi.name]) sel[fi.name] = fi.default_sheet; });
     return sel;
   }
 
   function refreshColumnsFromSheets() {
     const sel     = getSheetSelection();
-    const prevSel = getSelectedColumns();  // preserve current selection if possible
+    const prevSel = new Set(getSelectedColumns());
     const allCols = new Set();
-
     storedFilesInfo.forEach(fi => {
       const sheet = sel[fi.name] || fi.default_sheet;
-      const info  = fi.sheets[sheet];
-      if (info) info.columns.forEach(c => allCols.add(c));
+      (fi.sheets[sheet]?.columns || []).forEach(c => allCols.add(c));
     });
-
     const sorted = [...allCols].sort();
-    renderColumnList(sorted, new Set(prevSel.length ? prevSel : sorted));
+    renderColumnList(sorted, prevSel.size ? prevSel : new Set(sorted));
     updateDedupSelect();
   }
 
-  // ── Column list with drag-to-reorder ─────────────────────────────
+  // ── Column list + drag-to-reorder ─────────────────────────────────
   let dragSrc = null;
 
   function renderColumnList(cols, preSelected) {
-    const prev = preSelected || new Set(cols);
     colsList.innerHTML = '';
-    cols.forEach(col => {
-      colsList.appendChild(makeColItem(col, prev.has(col)));
-    });
+    cols.forEach(col => colsList.appendChild(makeColItem(col, preSelected ? preSelected.has(col) : true)));
     updateOrderNumbers();
   }
 
@@ -527,55 +575,44 @@
 
     div.querySelector('input').addEventListener('change', e => {
       div.classList.toggle('checked', e.target.checked);
-      updateOrderNumbers();
-      updateDedupSelect();
+      updateOrderNumbers(); updateDedupSelect(); invalidateReview();
     });
-
-    div.addEventListener('dragstart', e => {
-      dragSrc = div; div.classList.add('dragging');
-      e.dataTransfer.effectAllowed = 'move';
-    });
+    div.addEventListener('dragstart', e => { dragSrc = div; div.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
     div.addEventListener('dragend', () => {
       div.classList.remove('dragging');
-      colsList.querySelectorAll('.col-item').forEach(d =>
-        d.classList.remove('drag-over-top', 'drag-over-bottom'));
-      updateOrderNumbers();
+      colsList.querySelectorAll('.col-item').forEach(d => d.classList.remove('drag-over-top','drag-over-bottom'));
+      updateOrderNumbers(); invalidateReview();
     });
     div.addEventListener('dragover', e => {
       e.preventDefault();
       if (!dragSrc || dragSrc === div) return;
       const mid = div.getBoundingClientRect().top + div.getBoundingClientRect().height / 2;
-      colsList.querySelectorAll('.col-item').forEach(d =>
-        d.classList.remove('drag-over-top', 'drag-over-bottom'));
+      colsList.querySelectorAll('.col-item').forEach(d => d.classList.remove('drag-over-top','drag-over-bottom'));
       div.classList.add(e.clientY < mid ? 'drag-over-top' : 'drag-over-bottom');
     });
-    div.addEventListener('dragleave', () =>
-      div.classList.remove('drag-over-top', 'drag-over-bottom'));
+    div.addEventListener('dragleave', () => div.classList.remove('drag-over-top','drag-over-bottom'));
     div.addEventListener('drop', e => {
       e.preventDefault();
       if (!dragSrc || dragSrc === div) return;
       const mid = div.getBoundingClientRect().top + div.getBoundingClientRect().height / 2;
       colsList.insertBefore(dragSrc, e.clientY < mid ? div : div.nextSibling);
-      div.classList.remove('drag-over-top', 'drag-over-bottom');
-      updateOrderNumbers();
+      div.classList.remove('drag-over-top','drag-over-bottom');
+      updateOrderNumbers(); invalidateReview();
     });
-
     return div;
   }
 
   function updateOrderNumbers() {
     let n = 1;
     colsList.querySelectorAll('.col-item').forEach(d => {
-      d.querySelector('.col-order').textContent =
-        d.querySelector('input').checked ? n++ : '';
+      d.querySelector('.col-order').textContent = d.querySelector('input').checked ? n++ : '';
     });
   }
 
   function updateDedupSelect() {
-    const cols    = getSelectedColumns();
-    const current = dedupSel.value;
+    const cols = getSelectedColumns(), cur = dedupSel.value;
     populateDedupSelect(cols);
-    if (cols.includes(current)) dedupSel.value = current;
+    if (cols.includes(cur)) dedupSel.value = cur;
   }
 
   colSearch.addEventListener('input', () => {
@@ -584,27 +621,18 @@
       d.style.display = d.dataset.col.toLowerCase().includes(q) ? '' : 'none';
     });
   });
-
   selAllBtn.addEventListener('click', () => {
-    colsList.querySelectorAll('.col-item').forEach(d => {
-      d.querySelector('input').checked = true; d.classList.add('checked');
-    });
-    updateOrderNumbers(); updateDedupSelect();
+    colsList.querySelectorAll('.col-item').forEach(d => { d.querySelector('input').checked = true; d.classList.add('checked'); });
+    updateOrderNumbers(); updateDedupSelect(); invalidateReview();
   });
-
   deselAllBtn.addEventListener('click', () => {
-    colsList.querySelectorAll('.col-item').forEach(d => {
-      d.querySelector('input').checked = false; d.classList.remove('checked');
-    });
-    updateOrderNumbers(); updateDedupSelect();
+    colsList.querySelectorAll('.col-item').forEach(d => { d.querySelector('input').checked = false; d.classList.remove('checked'); });
+    updateOrderNumbers(); updateDedupSelect(); invalidateReview();
   });
 
   function populateDedupSelect(cols) {
     dedupSel.innerHTML = '<option value="">— Fila completa —</option>';
-    cols.forEach(c => {
-      const o = document.createElement('option');
-      o.value = c; o.textContent = c; dedupSel.appendChild(o);
-    });
+    cols.forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; dedupSel.appendChild(o); });
   }
 
   function populatePrioritySelect(files) {
@@ -618,39 +646,283 @@
     });
   }
 
+  // R1: reorder columns to match priority file's original column order
+  prioritySel.addEventListener('change', () => {
+    invalidateReview();
+    if (prioritySel.value) reorderByPriority(prioritySel.value);
+  });
+  dedupSel.addEventListener('change', invalidateReview);
+
+  function reorderByPriority(filename) {
+    const fi = storedFilesInfo.find(f => f.name === filename);
+    if (!fi) return;
+    const sel        = getSheetSelection();
+    const sheet      = sel[filename] || fi.default_sheet;
+    const priCols    = fi.sheets[sheet]?.columns || [];
+    const currentAll = [...colsList.querySelectorAll('.col-item')].map(d => d.dataset.col);
+    const checked    = new Set(getSelectedColumns());
+
+    // priority file cols first (in original order), then remaining
+    const inPriority = priCols.filter(c => currentAll.includes(c));
+    const rest       = currentAll.filter(c => !priCols.includes(c));
+    renderColumnList([...inPriority, ...rest], checked);
+  }
+
   function getSelectedColumns() {
     return [...colsList.querySelectorAll('.col-item')]
       .filter(d => d.querySelector('input').checked)
       .map(d => d.dataset.col);
   }
 
-  // ── Merge ─────────────────────────────────────────────────────────
-  mergeBtn.addEventListener('click', async () => {
-    mergeErr.classList.add('hidden');
+  function invalidateReview() {
+    previewData = null;
+    reviewCard.classList.add('hidden');
+  }
+
+  // ── Build request payload ─────────────────────────────────────────
+  function buildPayload() {
+    return {
+      columns:         getSelectedColumns(),
+      column_styles:   storedStyles,
+      dedup_column:    dedupSel.value || null,
+      priority_file:   prioritySel.value || null,
+      sheet_selection: getSheetSelection(),
+      file_data:       storedFileData,
+    };
+  }
+
+  // ── Analyze → /preview ────────────────────────────────────────────
+  analyzeBtn.addEventListener('click', async () => {
+    analyzeErr.classList.add('hidden');
     const cols = getSelectedColumns();
     if (cols.length === 0) {
-      mergeErr.textContent = 'Selecciona al menos una columna.';
-      mergeErr.classList.remove('hidden');
+      analyzeErr.textContent = 'Selecciona al menos una columna.';
+      analyzeErr.classList.remove('hidden');
       return;
     }
-    mergeBtn.innerHTML = '<span class="spinner"></span> Unificando...';
-    mergeBtn.disabled = true;
+    analyzeBtn.innerHTML = '<span class="spinner"></span> Analizando...';
+    analyzeBtn.disabled = true;
 
     try {
-      const res = await fetch('/merge', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          columns:        cols,
-          column_styles:  storedStyles,
-          dedup_column:   dedupSel.value || null,
-          priority_file:  prioritySel.value || null,
-          sheet_selection: getSheetSelection(),
-          file_data:      storedFileData
-        })
-      });
+      const res  = await fetch('/preview', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(buildPayload()) });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Error al unificar');
+      if (!res.ok) throw new Error(data.error || 'Error al analizar');
+      previewData = data;
+
+      const hasSim = data.similarity_suggestions.length > 0;
+      const hasDup = data.duplicate_groups.length > 0;
+
+      if (!hasSim && !hasDup) {
+        // Fast path: nothing to review, confirm directly
+        await doConfirm({}, []);
+      } else {
+        renderReviewCard(data);
+        reviewCard.classList.remove('hidden');
+        reviewCard.scrollIntoView({ behavior: 'smooth' });
+      }
+    } catch (e) {
+      analyzeErr.textContent = e.message;
+      analyzeErr.classList.remove('hidden');
+    } finally {
+      analyzeBtn.innerHTML = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.35-4.35"/></svg> Analizar y revisar`;
+      analyzeBtn.disabled = false;
+    }
+  });
+
+  // ── Render similarity review (R2) ─────────────────────────────────
+  function renderReviewCard(data) {
+    simBody.innerHTML = '';
+    dupBody.innerHTML = '';
+
+    const hasSim = data.similarity_suggestions.length > 0;
+    const hasDup = data.duplicate_groups.length > 0;
+
+    if (hasSim) {
+      document.getElementById('sim-badge').textContent = data.similarity_suggestions.reduce((s, sg) => s + sg.groups.length, 0) + ' grupos';
+      data.similarity_suggestions.forEach(suggestion => {
+        const block = document.createElement('div');
+        block.className = 'sim-col-block';
+        block.innerHTML = `
+          <div class="sim-col-header">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+            </svg>
+            Columna: <strong>${suggestion.column}</strong> — ${suggestion.groups.length} grupo(s)
+          </div>
+          <div class="sim-col-body" id="sim-body-${suggestion.column.replace(/\W/g,'_')}"></div>`;
+        simBody.appendChild(block);
+
+        const bodyEl = block.querySelector('.sim-col-body');
+        suggestion.groups.forEach((grp, gi) => {
+          const row = document.createElement('div');
+          row.className = 'sim-group-row';
+          row.dataset.col = suggestion.column;
+          row.dataset.gi  = gi;
+          const chips = grp.variants.map(v => `<span class="sim-variant-chip">${v}</span>`).join('');
+          row.innerHTML = `
+            <input type="checkbox" checked class="sim-toggle" />
+            <div class="sim-group-content">
+              <div class="sim-group-label">Variantes encontradas:</div>
+              <div class="sim-variants">${chips}</div>
+              <div class="sim-canonical-row">
+                <span>Unificar como:</span>
+                <input type="text" class="sim-canonical-input" value="${grp.canonical}" />
+              </div>
+            </div>`;
+          bodyEl.appendChild(row);
+        });
+
+        block.querySelector('.sim-col-header').addEventListener('click', () => {
+          const b = block.querySelector('.sim-col-body');
+          b.style.display = b.style.display === 'none' ? '' : 'none';
+        });
+      });
+      simSection.classList.remove('hidden');
+    } else {
+      simSection.classList.add('hidden');
+    }
+
+    if (hasDup) {
+      document.getElementById('dup-badge').textContent = data.duplicate_groups.length + ' grupos';
+      if (data.truncated_duplicates) {
+        document.getElementById('dup-truncation-warning').classList.remove('hidden');
+      }
+
+      const sourceColors = {};
+      let colorIdx = 0;
+      data.duplicate_groups.forEach((grp, gi) => {
+        const card = document.createElement('div');
+        card.className = 'dup-group-card';
+        card.dataset.gi = gi;
+
+        // Assign color badges to sources
+        const srcBadges = grp.sources.map(src => {
+          if (!(src in sourceColors)) sourceColors[src] = colorIdx++ % 4;
+          return `<span class="src-badge src-badge-${sourceColors[src]}">${src}</span>`;
+        }).join('');
+
+        const keyLabel = grp.key_col
+          ? `${grp.key_col} = <strong>${grp.key_val}</strong>`
+          : 'Fila duplicada';
+
+        card.innerHTML = `
+          <div class="dup-group-header">
+            ${keyLabel}
+            <div class="src-badges">${srcBadges}</div>
+          </div>
+          <div class="dup-table-wrap">
+            <table class="dup-table">
+              <thead><tr id="dup-head-${gi}"></tr></thead>
+              <tbody id="dup-tbody-${gi}"></tbody>
+            </table>
+          </div>
+          <div class="dup-keep-all-row">
+            <label>
+              <input type="radio" name="dup-${gi}" value="__all__" class="dup-radio" />
+              Conservar todos (no eliminar duplicados en este grupo)
+            </label>
+          </div>`;
+        dupBody.appendChild(card);
+
+        // Build table header
+        const headRow = card.querySelector(`#dup-head-${gi}`);
+        const thRadio = document.createElement('th');
+        thRadio.textContent = 'Conservar';
+        headRow.appendChild(thRadio);
+        const thSrc = document.createElement('th');
+        thSrc.textContent = 'Archivo';
+        headRow.appendChild(thSrc);
+        (previewData.columns).forEach(col => {
+          const th = document.createElement('th');
+          th.textContent = col;
+          headRow.appendChild(th);
+        });
+
+        // Build table rows
+        const tbody = card.querySelector(`#dup-tbody-${gi}`);
+        grp.records.forEach((rec, ri) => {
+          const tr = document.createElement('tr');
+          tr.dataset.rowId = grp.indices[ri];
+
+          const tdRadio = document.createElement('td');
+          const radio   = document.createElement('input');
+          radio.type    = 'radio';
+          radio.name    = `dup-${gi}`;
+          radio.value   = grp.indices[ri];
+          radio.className = 'dup-radio';
+          // Default: select first record (which is from priority file since we reordered)
+          if (ri === 0) { radio.checked = true; tr.classList.add('selected-row'); }
+          radio.addEventListener('change', () => {
+            tbody.querySelectorAll('tr').forEach(r => r.classList.remove('selected-row'));
+            if (radio.checked) tr.classList.add('selected-row');
+          });
+          tdRadio.appendChild(radio);
+          tr.appendChild(tdRadio);
+
+          const tdSrc = document.createElement('td');
+          const ci    = sourceColors[grp.sources[ri]] ?? 0;
+          tdSrc.innerHTML = `<span class="src-badge src-badge-${ci}">${grp.sources[ri]}</span>`;
+          tr.appendChild(tdSrc);
+
+          previewData.columns.forEach(col => {
+            const td = document.createElement('td');
+            td.textContent = rec[col] ?? '';
+            td.title       = rec[col] ?? '';
+            tr.appendChild(td);
+          });
+          tbody.appendChild(tr);
+        });
+
+        // Keep-all radio doesn't highlight rows
+        card.querySelector(`input[value="__all__"]`).addEventListener('change', () => {
+          tbody.querySelectorAll('tr').forEach(r => r.classList.remove('selected-row'));
+        });
+      });
+      dupSection.classList.remove('hidden');
+    } else {
+      dupSection.classList.add('hidden');
+    }
+  }
+
+  // ── Confirm button ────────────────────────────────────────────────
+  confirmBtn.addEventListener('click', async () => {
+    confirmErr.classList.add('hidden');
+    // Build homologation map from similarity UI
+    const homologation = {};
+    document.querySelectorAll('.sim-group-row').forEach(row => {
+      const cb = row.querySelector('.sim-toggle');
+      if (!cb.checked) return;
+      const col       = row.dataset.col;
+      const canonical = row.querySelector('.sim-canonical-input').value.trim();
+      const chips     = [...row.querySelectorAll('.sim-variant-chip')].map(c => c.textContent);
+      if (!homologation[col]) homologation[col] = {};
+      chips.forEach(v => { if (v !== canonical) homologation[col][v] = canonical; });
+    });
+
+    // Build rows to delete from duplicate radio buttons
+    const rowsToDelete = [];
+    if (previewData) {
+      previewData.duplicate_groups.forEach((grp, gi) => {
+        const selected = document.querySelector(`input[name="dup-${gi}"]:checked`);
+        if (!selected || selected.value === '__all__') return;
+        const keepId = parseInt(selected.value);
+        grp.indices.forEach(idx => { if (idx !== keepId) rowsToDelete.push(idx); });
+      });
+    }
+
+    await doConfirm(homologation, rowsToDelete);
+  });
+
+  async function doConfirm(homologation, rowsToDelete) {
+    confirmBtn.innerHTML = '<span class="spinner"></span> Generando Excel...';
+    confirmBtn.disabled = true;
+
+    const payload = { ...buildPayload(), homologation, rows_to_delete: rowsToDelete };
+
+    try {
+      const res  = await fetch('/confirm', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al confirmar');
 
       pendingDownload = data.output_data;
       document.getElementById('stat-rows').textContent = data.total_rows.toLocaleString();
@@ -659,14 +931,13 @@
       resultCard.classList.remove('hidden');
       resultCard.scrollIntoView({ behavior: 'smooth' });
     } catch (e) {
-      mergeErr.textContent = e.message;
-      mergeErr.classList.remove('hidden');
+      confirmErr.textContent = e.message;
+      confirmErr.classList.remove('hidden');
     } finally {
-      mergeBtn.innerHTML = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg> Unificar y descargar`;
-      mergeBtn.disabled = false;
+      confirmBtn.innerHTML = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> Confirmar y generar Excel`;
+      confirmBtn.disabled = false;
     }
-  });
+  }
 
   // ── Download ──────────────────────────────────────────────────────
   downloadBtn.addEventListener('click', () => {
@@ -684,19 +955,18 @@
   // ── Restart ───────────────────────────────────────────────────────
   restartBtn.addEventListener('click', () => {
     selectedFiles = []; storedFileData = []; storedStyles = {};
-    storedFilesInfo = []; pendingDownload = null;
+    storedFilesInfo = []; previewData = null; pendingDownload = null;
     renderFileList();
     uploadBtn.disabled = true;
     sheetPanel.classList.add('hidden');
     colsCard.classList.add('hidden');
+    reviewCard.classList.add('hidden');
     resultCard.classList.add('hidden');
-    uploadErr.classList.add('hidden');
-    mergeErr.classList.add('hidden');
+    [uploadErr, analyzeErr, confirmErr].forEach(e => e.classList.add('hidden'));
     colSearch.value = '';
     prioritySel.innerHTML = '<option value="">— El primero subido —</option>';
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 </script>
-
 </body>
 </html>
