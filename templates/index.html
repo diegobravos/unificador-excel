@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Unificador de Planillas Excel</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f2f5;
+      color: #333;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #1a73e8;
+      color: white;
+      padding: 20px 32px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
+
+    header h1 { font-size: 1.5rem; font-weight: 600; }
+    header p { font-size: 0.875rem; opacity: 0.85; margin-top: 4px; }
+
+    main {
+      max-width: 860px;
+      margin: 32px auto;
+      padding: 0 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 28px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+
+    .card h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: #1a73e8;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card h2 .step {
+      background: #1a73e8;
+      color: white;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      flex-shrink: 0;
+    }
+
+    .drop-zone {
+      border: 2px dashed #c5cae9;
+      border-radius: 10px;
+      padding: 40px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: #fafbff;
+    }
+
+    .drop-zone:hover, .drop-zone.drag-over {
+      border-color: #1a73e8;
+      background: #e8f0fe;
+    }
+
+    .drop-zone svg { color: #9aa0c7; margin-bottom: 10px; }
+    .drop-zone p { color: #555; font-size: 0.9rem; }
+    .drop-zone span { color: #1a73e8; font-weight: 600; cursor: pointer; }
+
+    #file-input { display: none; }
+
+    #file-list { margin-top: 14px; display: flex; flex-direction: column; gap: 8px; }
+
+    .file-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #f1f3f9;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 0.85rem;
+    }
+
+    .file-item svg { color: #1a73e8; flex-shrink: 0; }
+    .file-item .file-name { font-weight: 500; flex: 1; }
+    .file-item .file-meta { color: #777; font-size: 0.78rem; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 22px;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, opacity 0.2s;
+    }
+
+    .btn-primary { background: #1a73e8; color: white; }
+    .btn-primary:hover { background: #1558c0; }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-success { background: #34a853; color: white; }
+    .btn-success:hover { background: #2d8f46; }
+    .btn-success:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-download { background: #fbbc04; color: #333; }
+    .btn-download:hover { background: #f0a800; }
+
+    .columns-toolbar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .columns-toolbar input[type="text"] {
+      flex: 1;
+      min-width: 180px;
+      padding: 8px 12px;
+      border: 1px solid #d0d5e8;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      outline: none;
+    }
+
+    .columns-toolbar input:focus { border-color: #1a73e8; }
+
+    .btn-sm { padding: 7px 14px; font-size: 0.8rem; border-radius: 6px; }
+
+    .btn-outline {
+      background: white;
+      border: 1px solid #c5cae9;
+      color: #444;
+    }
+
+    .btn-outline:hover { background: #f0f2ff; border-color: #1a73e8; }
+
+    .columns-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 8px;
+      max-height: 320px;
+      overflow-y: auto;
+      padding: 4px 2px;
+    }
+
+    .col-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 12px;
+      border: 1px solid #e0e4f0;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-size: 0.85rem;
+    }
+
+    .col-item:hover { border-color: #1a73e8; background: #f0f6ff; }
+    .col-item input[type="checkbox"] { width: 16px; height: 16px; accent-color: #1a73e8; cursor: pointer; flex-shrink: 0; }
+    .col-item.checked { border-color: #1a73e8; background: #e8f0fe; }
+    .col-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    .dedup-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .dedup-row label { font-size: 0.875rem; color: #444; }
+
+    .dedup-row select {
+      padding: 8px 12px;
+      border: 1px solid #d0d5e8;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      outline: none;
+      background: white;
+      min-width: 200px;
+    }
+
+    .dedup-row select:focus { border-color: #1a73e8; }
+
+    .result-box {
+      background: #e6f4ea;
+      border: 1px solid #81c995;
+      border-radius: 10px;
+      padding: 20px;
+    }
+
+    .result-stats {
+      display: flex;
+      gap: 24px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .stat { display: flex; flex-direction: column; align-items: center; }
+    .stat .value { font-size: 1.8rem; font-weight: 700; color: #1a73e8; line-height: 1; }
+    .stat .label { font-size: 0.75rem; color: #555; margin-top: 4px; }
+    .stat.warn .value { color: #e37400; }
+    .stat.good .value { color: #34a853; }
+
+    .hidden { display: none !important; }
+
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255,255,255,0.4);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: inline-block;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .alert {
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      margin-top: 12px;
+    }
+
+    .alert-error { background: #fce8e6; color: #c62828; border: 1px solid #f4b8b2; }
+
+    .action-row { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Unificador de Planillas Excel</h1>
+  <p>Sube múltiples archivos, elige las columnas y descarga el resultado sin duplicados</p>
+</header>
+
+<main>
+
+  <!-- PASO 1 -->
+  <div class="card">
+    <h2><span class="step">1</span> Sube tus archivos</h2>
+
+    <div class="drop-zone" id="drop-zone">
+      <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round"
+          d="M12 16v-8m0 0-3 3m3-3 3 3M4.75 17.25A3.75 3.75 0 0 0 8.5 21h7a3.75 3.75 0 0 0 3.75-3.75V8.25L14 3H8.5A3.75 3.75 0 0 0 4.75 6.75v10.5Z"/>
+      </svg>
+      <p>Arrastra archivos aquí o <span id="browse-btn">haz clic para seleccionar</span></p>
+      <p style="font-size:0.78rem;color:#999;margin-top:6px;">Formatos: .xlsx, .xls, .csv</p>
+    </div>
+
+    <input type="file" id="file-input" multiple accept=".xlsx,.xls,.csv" />
+    <div id="file-list"></div>
+
+    <div class="action-row">
+      <button class="btn btn-primary" id="upload-btn" disabled>
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2M16 8l-4-4-4 4M12 4v12"/>
+        </svg>
+        Cargar archivos
+      </button>
+    </div>
+
+    <div id="upload-error" class="alert alert-error hidden"></div>
+  </div>
+
+  <!-- PASO 2 -->
+  <div class="card hidden" id="columns-card">
+    <h2><span class="step">2</span> Selecciona las columnas</h2>
+
+    <div class="columns-toolbar">
+      <input type="text" id="col-search" placeholder="Buscar columna..." />
+      <button class="btn btn-outline btn-sm" id="select-all-btn">Seleccionar todo</button>
+      <button class="btn btn-outline btn-sm" id="deselect-all-btn">Deseleccionar todo</button>
+    </div>
+
+    <div class="columns-grid" id="columns-grid"></div>
+
+    <div style="margin-top:20px;">
+      <p style="font-size:0.875rem;color:#444;margin-bottom:10px;font-weight:600;">Eliminar duplicados por columna (opcional)</p>
+      <div class="dedup-row">
+        <label for="dedup-select">Columna clave:</label>
+        <select id="dedup-select">
+          <option value="">— Fila completa —</option>
+        </select>
+      </div>
+      <p style="font-size:0.77rem;color:#888;margin-top:6px;">Si eliges una columna, se eliminan filas con el mismo valor en esa columna.</p>
+    </div>
+
+    <div class="action-row">
+      <button class="btn btn-success" id="merge-btn">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+        </svg>
+        Unificar y descargar
+      </button>
+    </div>
+
+    <div id="merge-error" class="alert alert-error hidden"></div>
+  </div>
+
+  <!-- PASO 3 -->
+  <div class="card hidden" id="result-card">
+    <h2><span class="step">3</span> Resultado</h2>
+
+    <div class="result-box">
+      <div class="result-stats">
+        <div class="stat good">
+          <span class="value" id="stat-rows">0</span>
+          <span class="label">Filas totales</span>
+        </div>
+        <div class="stat">
+          <span class="value" id="stat-cols">0</span>
+          <span class="label">Columnas</span>
+        </div>
+        <div class="stat warn">
+          <span class="value" id="stat-dups">0</span>
+          <span class="label">Duplicados eliminados</span>
+        </div>
+      </div>
+
+      <button class="btn btn-download" id="download-btn">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2M8 12l4 4 4-4M12 4v12"/>
+        </svg>
+        Descargar Excel
+      </button>
+    </div>
+
+    <button class="btn btn-outline btn-sm" id="restart-btn" style="margin-top:14px;">
+      Procesar nuevos archivos
+    </button>
+  </div>
+
+</main>
+
+<script>
+  const dropZone    = document.getElementById('drop-zone');
+  const fileInput   = document.getElementById('file-input');
+  const fileList    = document.getElementById('file-list');
+  const uploadBtn   = document.getElementById('upload-btn');
+  const browseBtn   = document.getElementById('browse-btn');
+  const colsCard    = document.getElementById('columns-card');
+  const colsGrid    = document.getElementById('columns-grid');
+  const colSearch   = document.getElementById('col-search');
+  const selAllBtn   = document.getElementById('select-all-btn');
+  const deselAllBtn = document.getElementById('deselect-all-btn');
+  const dedupSel    = document.getElementById('dedup-select');
+  const mergeBtn    = document.getElementById('merge-btn');
+  const resultCard  = document.getElementById('result-card');
+  const uploadErr   = document.getElementById('upload-error');
+  const mergeErr    = document.getElementById('merge-error');
+  const downloadBtn = document.getElementById('download-btn');
+  const restartBtn  = document.getElementById('restart-btn');
+
+  let selectedFiles = [];
+  let storedFileData = [];   // base64 file data from server
+  let pendingDownload = null; // base64 Excel output
+
+  // Drag & drop
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+  dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('drag-over'); addFiles([...e.dataTransfer.files]); });
+  browseBtn.addEventListener('click', () => fileInput.click());
+  dropZone.addEventListener('click', e => { if (e.target !== browseBtn) fileInput.click(); });
+  fileInput.addEventListener('change', () => { addFiles([...fileInput.files]); fileInput.value = ''; });
+
+  function addFiles(files) {
+    files.forEach(f => {
+      const ext = f.name.split('.').pop().toLowerCase();
+      if (['xlsx','xls','csv'].includes(ext) && !selectedFiles.find(x => x.name === f.name))
+        selectedFiles.push(f);
+    });
+    renderFileList();
+    uploadBtn.disabled = selectedFiles.length === 0;
+  }
+
+  function renderFileList() {
+    fileList.innerHTML = '';
+    selectedFiles.forEach((f, i) => {
+      const div = document.createElement('div');
+      div.className = 'file-item';
+      div.innerHTML = `
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M9 12h6m-6 4h6M5 6.75A3.75 3.75 0 0 1 8.75 3H14l5 5v12.25A3.75 3.75 0 0 1 15.25 24H8.75A3.75 3.75 0 0 1 5 20.25V6.75Z"/>
+        </svg>
+        <span class="file-name">${f.name}</span>
+        <span class="file-meta">${(f.size/1024).toFixed(1)} KB</span>
+        <span style="cursor:pointer;color:#e53935;margin-left:auto;" data-idx="${i}" class="remove-file">&times;</span>`;
+      fileList.appendChild(div);
+    });
+    document.querySelectorAll('.remove-file').forEach(btn =>
+      btn.addEventListener('click', e => {
+        selectedFiles.splice(+e.target.dataset.idx, 1);
+        renderFileList();
+        uploadBtn.disabled = selectedFiles.length === 0;
+      })
+    );
+  }
+
+  // Upload
+  uploadBtn.addEventListener('click', async () => {
+    uploadErr.classList.add('hidden');
+    uploadBtn.innerHTML = '<span class="spinner"></span> Cargando...';
+    uploadBtn.disabled = true;
+
+    const form = new FormData();
+    selectedFiles.forEach(f => form.append('files', f));
+
+    try {
+      const res  = await fetch('/upload', { method: 'POST', body: form });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al cargar');
+
+      storedFileData = data.file_data;
+      renderColumns(data.columns);
+      populateDedupSelect(data.columns);
+      colsCard.classList.remove('hidden');
+      colsCard.scrollIntoView({ behavior: 'smooth' });
+    } catch (e) {
+      uploadErr.textContent = e.message;
+      uploadErr.classList.remove('hidden');
+    } finally {
+      uploadBtn.innerHTML = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2M16 8l-4-4-4 4M12 4v12"/></svg> Cargar archivos`;
+      uploadBtn.disabled = false;
+    }
+  });
+
+  // Columns
+  function renderColumns(cols) {
+    colsGrid.innerHTML = '';
+    cols.forEach(col => {
+      const div = document.createElement('div');
+      div.className = 'col-item checked';
+      div.dataset.col = col;
+      div.innerHTML = `<input type="checkbox" checked /><span class="col-label" title="${col}">${col}</span>`;
+      div.addEventListener('click', () => {
+        const cb = div.querySelector('input');
+        cb.checked = !cb.checked;
+        div.classList.toggle('checked', cb.checked);
+      });
+      colsGrid.appendChild(div);
+    });
+  }
+
+  selAllBtn.addEventListener('click', () =>
+    colsGrid.querySelectorAll('.col-item').forEach(d => { d.querySelector('input').checked = true; d.classList.add('checked'); })
+  );
+  deselAllBtn.addEventListener('click', () =>
+    colsGrid.querySelectorAll('.col-item').forEach(d => { d.querySelector('input').checked = false; d.classList.remove('checked'); })
+  );
+  colSearch.addEventListener('input', () => {
+    const q = colSearch.value.toLowerCase();
+    colsGrid.querySelectorAll('.col-item').forEach(d => {
+      d.style.display = d.dataset.col.toLowerCase().includes(q) ? '' : 'none';
+    });
+  });
+
+  function populateDedupSelect(cols) {
+    dedupSel.innerHTML = '<option value="">— Fila completa —</option>';
+    cols.forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; dedupSel.appendChild(o); });
+  }
+
+  function getSelectedColumns() {
+    return [...colsGrid.querySelectorAll('.col-item')]
+      .filter(d => d.querySelector('input').checked)
+      .map(d => d.dataset.col);
+  }
+
+  // Merge
+  mergeBtn.addEventListener('click', async () => {
+    mergeErr.classList.add('hidden');
+    const cols = getSelectedColumns();
+    if (cols.length === 0) {
+      mergeErr.textContent = 'Selecciona al menos una columna.';
+      mergeErr.classList.remove('hidden');
+      return;
+    }
+
+    mergeBtn.innerHTML = '<span class="spinner"></span> Unificando...';
+    mergeBtn.disabled = true;
+
+    try {
+      const res  = await fetch('/merge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          columns: cols,
+          dedup_column: dedupSel.value || null,
+          file_data: storedFileData
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al unificar');
+
+      pendingDownload = data.output_data;
+      document.getElementById('stat-rows').textContent = data.total_rows.toLocaleString();
+      document.getElementById('stat-cols').textContent = data.columns.length;
+      document.getElementById('stat-dups').textContent = data.duplicates_removed.toLocaleString();
+      resultCard.classList.remove('hidden');
+      resultCard.scrollIntoView({ behavior: 'smooth' });
+    } catch (e) {
+      mergeErr.textContent = e.message;
+      mergeErr.classList.remove('hidden');
+    } finally {
+      mergeBtn.innerHTML = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg> Unificar y descargar`;
+      mergeBtn.disabled = false;
+    }
+  });
+
+  // Download from base64
+  downloadBtn.addEventListener('click', () => {
+    if (!pendingDownload) return;
+    const bytes = atob(pendingDownload);
+    const arr   = new Uint8Array(bytes.length);
+    for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+    const blob = new Blob([arr], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = 'planillas_unificadas.xlsx'; a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  // Restart
+  restartBtn.addEventListener('click', () => {
+    selectedFiles = []; storedFileData = []; pendingDownload = null;
+    renderFileList();
+    uploadBtn.disabled = true;
+    colsCard.classList.add('hidden');
+    resultCard.classList.add('hidden');
+    uploadErr.classList.add('hidden');
+    mergeErr.classList.add('hidden');
+    colSearch.value = '';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+</script>
+
+</body>
+</html>
