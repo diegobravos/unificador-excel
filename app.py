@@ -9,22 +9,53 @@ from openpyxl.utils import get_column_letter
 app = Flask(__name__, template_folder='templates')
 
 
-def read_file_from_bytes(file_bytes, filename):
+def read_file_from_bytes(file_bytes, filename, sheet_name=None):
     ext = filename.rsplit('.', 1)[1].lower()
     bio = io.BytesIO(file_bytes)
     if ext == 'csv':
         return pd.read_csv(bio, dtype=str)
-    return pd.read_excel(bio, dtype=str)
+    kwargs = {'dtype': str}
+    if sheet_name:
+        kwargs['sheet_name'] = sheet_name
+    return pd.read_excel(bio, **kwargs)
 
 
-def extract_header_styles(file_bytes, filename):
+def get_sheet_names(file_bytes, filename):
+    ext = filename.rsplit('.', 1)[1].lower()
+    if ext == 'csv':
+        return ['(hoja única)']
+    try:
+        xl = pd.ExcelFile(io.BytesIO(file_bytes))
+        return xl.sheet_names
+    except Exception:
+        return []
+
+
+def read_all_sheets_info(file_bytes, filename):
+    """Returns {sheet_name: {columns, rows}} for every sheet."""
+    ext = filename.rsplit('.', 1)[1].lower()
+    if ext == 'csv':
+        df = pd.read_csv(io.BytesIO(file_bytes), dtype=str)
+        return {'(hoja única)': {'columns': list(df.columns), 'rows': len(df)}}
+    try:
+        xl  = pd.ExcelFile(io.BytesIO(file_bytes))
+        out = {}
+        for sn in xl.sheet_names:
+            df = pd.read_excel(io.BytesIO(file_bytes), sheet_name=sn, dtype=str)
+            out[sn] = {'columns': list(df.columns), 'rows': len(df)}
+        return out
+    except Exception:
+        return {}
+
+
+def extract_header_styles(file_bytes, filename, sheet_name=None):
     ext = filename.rsplit('.', 1)[1].lower()
     if ext == 'csv':
         return {}
     styles = {}
     try:
         wb = load_workbook(io.BytesIO(file_bytes))
-        ws = wb.active
+        ws = wb[sheet_name] if sheet_name and sheet_name in wb.sheetnames else wb.active
         for cell in ws[1]:
             col_name = str(cell.value) if cell.value is not None else ''
             if not col_name:
@@ -71,7 +102,6 @@ def upload_files():
         return jsonify({'error': 'No se enviaron archivos'}), 400
 
     files = request.files.getlist('files')
-    all_columns = set()
     all_styles = {}
     file_data_list = []
     file_info = []
@@ -85,19 +115,25 @@ def upload_files():
 
         file_bytes = f.read()
         try:
-            df = read_file_from_bytes(file_bytes, f.filename)
-            cols = list(df.columns)
-            all_columns.update(cols)
-            file_info.append({'name': f.filename, 'rows': len(df), 'columns': cols})
+            sheets_info   = read_all_sheets_info(file_bytes, f.filename)
+            default_sheet = next(iter(sheets_info))  # first sheet
+
             file_data_list.append({
                 'name': f.filename,
                 'data': base64.b64encode(file_bytes).decode('utf-8')
             })
-            # Collect styles; first file wins for each column
-            styles = extract_header_styles(file_bytes, f.filename)
+            file_info.append({
+                'name':          f.filename,
+                'sheets':        sheets_info,
+                'default_sheet': default_sheet
+            })
+
+            # Styles from default sheet; first file wins per column
+            styles = extract_header_styles(file_bytes, f.filename, sheet_name=default_sheet)
             for col, style in styles.items():
                 if col not in all_styles:
                     all_styles[col] = style
+
         except Exception as e:
             return jsonify({'error': f'Error leyendo {f.filename}: {str(e)}'}), 400
 
@@ -105,10 +141,9 @@ def upload_files():
         return jsonify({'error': 'Ningún archivo válido fue cargado'}), 400
 
     return jsonify({
-        'columns': sorted(list(all_columns)),
         'column_styles': all_styles,
-        'files': file_info,
-        'file_data': file_data_list
+        'files':         file_info,
+        'file_data':     file_data_list
     })
 
 
@@ -118,13 +153,13 @@ def merge_files():
     column_order   = data.get('columns', [])
     column_styles  = data.get('column_styles', {})
     dedup_column   = data.get('dedup_column') or None
-    priority_file  = data.get('priority_file') or None   # filename that wins on conflict
+    priority_file  = data.get('priority_file') or None
+    sheet_selection = data.get('sheet_selection', {})   # {filename: sheet_name}
     file_data_list = data.get('file_data', [])
 
     if not column_order or not file_data_list:
         return jsonify({'error': 'Faltan parámetros'}), 400
 
-    # Move priority file to the front so keep='first' makes it win
     if priority_file:
         priority = [fd for fd in file_data_list if fd['name'] == priority_file]
         others   = [fd for fd in file_data_list if fd['name'] != priority_file]
@@ -133,18 +168,17 @@ def merge_files():
     dfs = []
     for fd in file_data_list:
         try:
-            file_bytes = base64.b64decode(fd['data'])
-            df = read_file_from_bytes(file_bytes, fd['name'])
-            cols_to_use = [c for c in column_order if c in df.columns]
+            file_bytes   = base64.b64decode(fd['data'])
+            sheet_name   = sheet_selection.get(fd['name']) or None
+            df           = read_file_from_bytes(file_bytes, fd['name'], sheet_name=sheet_name)
+            cols_to_use  = [c for c in column_order if c in df.columns]
             dfs.append(df[cols_to_use])
         except Exception as e:
             return jsonify({'error': f'Error procesando {fd["name"]}: {str(e)}'}), 400
 
-    merged = pd.concat(dfs, ignore_index=True)
-
-    # Reorder columns to match requested order
+    merged     = pd.concat(dfs, ignore_index=True)
     final_cols = [c for c in column_order if c in merged.columns]
-    merged = merged[final_cols]
+    merged     = merged[final_cols]
 
     before = len(merged)
     if dedup_column and dedup_column in merged.columns:
@@ -153,34 +187,28 @@ def merge_files():
         merged = merged.drop_duplicates()
     duplicates_removed = before - len(merged)
 
-    # Build output with openpyxl to preserve styles
     wb = Workbook()
     ws = wb.active
 
-    # Write header row with original styles
     for col_idx, col_name in enumerate(final_cols, 1):
         cell  = ws.cell(row=1, column=col_idx, value=col_name)
         style = column_styles.get(col_name, {})
-
         if 'bg_color' in style:
             cell.fill = PatternFill('solid', fgColor=style['bg_color'])
-
         font_kwargs = {'bold': style.get('bold', True)}
         if 'font_color' in style:
             font_kwargs['color'] = style['font_color']
-        cell.font = Font(**font_kwargs)
+        cell.font      = Font(**font_kwargs)
         cell.alignment = Alignment(horizontal='left', vertical='center')
 
-    # Write data rows
     for row_idx, row in enumerate(merged.itertuples(index=False), 2):
         for col_idx, value in enumerate(row, 1):
             ws.cell(row=row_idx, column=col_idx,
                     value='' if (value is None or (isinstance(value, float) and pd.isna(value))) else value)
 
-    # Set column widths
     for col_idx, col_name in enumerate(final_cols, 1):
         col_letter = get_column_letter(col_idx)
-        style = column_styles.get(col_name, {})
+        style      = column_styles.get(col_name, {})
         ws.column_dimensions[col_letter].width = style.get('width', max(len(col_name) + 4, 14))
 
     output = io.BytesIO()
@@ -189,10 +217,10 @@ def merge_files():
     output_b64 = base64.b64encode(output.read()).decode('utf-8')
 
     return jsonify({
-        'output_data': output_b64,
-        'total_rows': len(merged),
+        'output_data':        output_b64,
+        'total_rows':         len(merged),
         'duplicates_removed': duplicates_removed,
-        'columns': final_cols
+        'columns':            final_cols
     })
 
 
