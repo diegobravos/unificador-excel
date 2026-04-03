@@ -278,11 +278,38 @@
       </button>
     </div>
     <div id="upload-error" class="alert alert-error hidden"></div>
+    <div class="action-row hidden" id="continue-step1-row">
+      <button class="btn btn-primary" id="continue-step1-btn">
+        Continuar
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 18l6-6-6-6"/>
+        </svg>
+      </button>
+    </div>
   </div>
 
-  <!-- PASO 2: Columnas -->
+  <!-- PASO 2: Archivo prioritario -->
+  <div class="card hidden" id="priority-card">
+    <h2><span class="step">2</span> Archivo prioritario</h2>
+    <p style="font-size:0.875rem;color:#444;margin-bottom:14px;">En caso de duplicado, ¿qué archivo prevalece? Sus columnas también se usan como orden de referencia.</p>
+    <div class="dedup-row">
+      <label for="priority-select">Archivo prioritario:</label>
+      <select id="priority-select"><option value="">— El primero subido —</option></select>
+    </div>
+    <p style="font-size:0.77rem;color:#888;margin-top:8px;">Sus datos prevalecen en duplicados y sus columnas definen el orden de referencia.</p>
+    <div class="action-row" style="margin-top:20px;">
+      <button class="btn btn-primary" id="continue-step2-btn">
+        Continuar
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 18l6-6-6-6"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- PASO 3: Columnas -->
   <div class="card hidden" id="columns-card">
-    <h2><span class="step">2</span> Selecciona y ordena las columnas</h2>
+    <h2><span class="step">3</span> Selecciona y ordena las columnas</h2>
     <div class="columns-toolbar">
       <input type="text" id="col-search" placeholder="Buscar columna..." />
       <button class="btn btn-outline btn-sm" id="select-all-btn">Seleccionar todo</button>
@@ -296,23 +323,13 @@
     </div>
     <div id="columns-list"></div>
 
-    <div style="margin-top:20px;display:flex;flex-direction:column;gap:16px;">
-      <div>
-        <p style="font-size:0.875rem;color:#444;margin-bottom:10px;font-weight:600;">Eliminar duplicados por columna (opcional)</p>
-        <div class="dedup-row">
-          <label for="dedup-select">Columna clave:</label>
-          <select id="dedup-select"><option value="">— Fila completa —</option></select>
-        </div>
-        <p style="font-size:0.77rem;color:#888;margin-top:6px;">Si eliges una columna, se eliminan filas con el mismo valor en esa columna.</p>
+    <div style="margin-top:20px;">
+      <p style="font-size:0.875rem;color:#444;margin-bottom:10px;font-weight:600;">Eliminar duplicados por columna (opcional)</p>
+      <div class="dedup-row">
+        <label for="dedup-select">Columna clave:</label>
+        <select id="dedup-select"><option value="">— Fila completa —</option></select>
       </div>
-      <div>
-        <p style="font-size:0.875rem;color:#444;margin-bottom:10px;font-weight:600;">En caso de duplicado, ¿qué archivo prevalece?</p>
-        <div class="dedup-row">
-          <label for="priority-select">Archivo prioritario:</label>
-          <select id="priority-select"><option value="">— El primero subido —</option></select>
-        </div>
-        <p style="font-size:0.77rem;color:#888;margin-top:6px;">Sus columnas también se usan como orden de referencia y sus datos prevalecen en duplicados.</p>
-      </div>
+      <p style="font-size:0.77rem;color:#888;margin-top:6px;">Si eliges una columna, se eliminan filas con el mismo valor en esa columna.</p>
     </div>
 
     <div class="action-row">
@@ -326,7 +343,7 @@
     <div id="analyze-error" class="alert alert-error hidden"></div>
   </div>
 
-  <!-- PASO 2.5: Revisión -->
+  <!-- PASO 3.5: Revisión -->
   <div class="card hidden" id="review-card">
     <h2><span class="step">!</span> Revisión de datos</h2>
 
@@ -370,9 +387,9 @@
     <div id="confirm-error" class="alert alert-error hidden"></div>
   </div>
 
-  <!-- PASO 3: Resultado -->
+  <!-- PASO 4: Resultado -->
   <div class="card hidden" id="result-card">
-    <h2><span class="step">3</span> Resultado</h2>
+    <h2><span class="step">4</span> Resultado</h2>
     <div class="result-box">
       <div class="result-stats">
         <div class="stat good"><span class="value" id="stat-rows">0</span><span class="label">Filas totales</span></div>
@@ -400,6 +417,10 @@
   const browseBtn   = document.getElementById('browse-btn');
   const sheetPanel  = document.getElementById('sheet-panel');
   const sheetRows   = document.getElementById('sheet-rows');
+  const priorityCard   = document.getElementById('priority-card');
+  const contStep1Row   = document.getElementById('continue-step1-row');
+  const contStep1Btn   = document.getElementById('continue-step1-btn');
+  const contStep2Btn   = document.getElementById('continue-step2-btn');
   const colsCard    = document.getElementById('columns-card');
   const colsList    = document.getElementById('columns-list');
   const colSearch   = document.getElementById('col-search');
@@ -486,10 +507,15 @@
       storedStyles    = data.column_styles || {};
       storedFilesInfo = data.files;
       renderSheetSelectors(data.files);
-      refreshColumnsFromSheets();
       populatePrioritySelect(data.files);
-      colsCard.classList.remove('hidden');
-      colsCard.scrollIntoView({ behavior: 'smooth' });
+      // Hide downstream steps in case of re-upload
+      priorityCard.classList.add('hidden');
+      colsCard.classList.add('hidden');
+      reviewCard.classList.add('hidden');
+      resultCard.classList.add('hidden');
+      // Show "Continuar" below the sheet selector (or immediately if no multi-sheet)
+      contStep1Row.classList.remove('hidden');
+      contStep1Row.scrollIntoView({ behavior: 'smooth' });
     } catch (e) {
       uploadErr.textContent = e.message;
       uploadErr.classList.remove('hidden');
@@ -497,6 +523,22 @@
       uploadBtn.innerHTML = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2M16 8l-4-4-4 4M12 4v12"/></svg> Cargar archivos`;
       uploadBtn.disabled = false;
     }
+  });
+
+  // ── Step navigation ───────────────────────────────────────────────
+  contStep1Btn.addEventListener('click', () => {
+    priorityCard.classList.remove('hidden');
+    priorityCard.scrollIntoView({ behavior: 'smooth' });
+  });
+
+  contStep2Btn.addEventListener('click', () => {
+    refreshColumnsFromSheets();
+    if (prioritySel.value) reorderByPriority(prioritySel.value);
+    colsCard.classList.remove('hidden');
+    reviewCard.classList.add('hidden');
+    resultCard.classList.add('hidden');
+    previewData = null;
+    colsCard.scrollIntoView({ behavior: 'smooth' });
   });
 
   // ── Sheet selectors ───────────────────────────────────────────────
@@ -519,10 +561,12 @@
         }).join('');
         row.innerHTML = `<span class="sr-filename">${fi.name}</span><select data-file="${fi.name}" class="sheet-select">${opts}</select>`;
         row.querySelector('.sheet-select').addEventListener('change', () => {
-          invalidateReview();
-          refreshColumnsFromSheets();
-          // Re-apply priority order if priority is set
-          if (prioritySel.value) reorderByPriority(prioritySel.value);
+          // Sheet changed → hide everything below step 1
+          priorityCard.classList.add('hidden');
+          colsCard.classList.add('hidden');
+          reviewCard.classList.add('hidden');
+          resultCard.classList.add('hidden');
+          previewData = null;
         });
       }
       sheetRows.appendChild(row);
@@ -646,10 +690,12 @@
     });
   }
 
-  // R1: reorder columns to match priority file's original column order
+  // Changing priority in step 2 hides downstream steps (reorder happens on "Continuar")
   prioritySel.addEventListener('change', () => {
-    invalidateReview();
-    if (prioritySel.value) reorderByPriority(prioritySel.value);
+    colsCard.classList.add('hidden');
+    reviewCard.classList.add('hidden');
+    resultCard.classList.add('hidden');
+    previewData = null;
   });
   dedupSel.addEventListener('change', invalidateReview);
 
@@ -959,6 +1005,8 @@
     renderFileList();
     uploadBtn.disabled = true;
     sheetPanel.classList.add('hidden');
+    contStep1Row.classList.add('hidden');
+    priorityCard.classList.add('hidden');
     colsCard.classList.add('hidden');
     reviewCard.classList.add('hidden');
     resultCard.classList.add('hidden');
