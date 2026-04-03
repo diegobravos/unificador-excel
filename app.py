@@ -8,7 +8,33 @@ from openpyxl import load_workbook, Workbook
 from openpyxl.styles import PatternFill, Font, Alignment
 from openpyxl.utils import get_column_letter
 
+import json
+import math
+
 app = Flask(__name__, template_folder='templates')
+
+
+class _SafeEncoder(json.JSONEncoder):
+    """Converts NaN/Inf floats to None so the response is always valid JSON."""
+    def default(self, obj):
+        return super().default(obj)
+
+    def iterencode(self, o, _one_shot=False):
+        # Replace NaN and Infinity before encoding
+        return super().iterencode(self._clean(o), _one_shot)
+
+    def _clean(self, obj):
+        if isinstance(obj, float):
+            if math.isnan(obj) or math.isinf(obj):
+                return None
+        elif isinstance(obj, dict):
+            return {k: self._clean(v) for k, v in obj.items()}
+        elif isinstance(obj, (list, tuple)):
+            return [self._clean(v) for v in obj]
+        return obj
+
+
+app.json.encoder = _SafeEncoder
 
 
 # ── File reading ───────────────────────────────────────────────────────────────
@@ -148,7 +174,7 @@ def find_duplicate_groups(df, dedup_column, max_groups=50):
                 'key_col': dedup_column,
                 'key_val': str(key_val),
                 'indices': grp_df['__row_id__'].tolist(),
-                'records': grp_df[data_cols].to_dict('records'),
+                'records': grp_df[data_cols].fillna('').to_dict('records'),
                 'sources': grp_df['__source__'].tolist() if '__source__' in df.columns else [],
             })
     else:
@@ -170,7 +196,7 @@ def find_duplicate_groups(df, dedup_column, max_groups=50):
                 'key_col': None,
                 'key_val': f'dup_{len(groups)}',
                 'indices': same['__row_id__'].tolist(),
-                'records': same[data_cols].to_dict('records'),
+                'records': same[data_cols].fillna('').to_dict('records'),
                 'sources': same['__source__'].tolist() if '__source__' in df.columns else [],
             })
     return groups
