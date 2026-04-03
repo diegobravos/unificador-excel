@@ -219,15 +219,30 @@
 
     <div id="columns-list"></div>
 
-    <div style="margin-top:20px;">
-      <p style="font-size:0.875rem;color:#444;margin-bottom:10px;font-weight:600;">Eliminar duplicados por columna (opcional)</p>
-      <div class="dedup-row">
-        <label for="dedup-select">Columna clave:</label>
-        <select id="dedup-select">
-          <option value="">— Fila completa —</option>
-        </select>
+    <div style="margin-top:20px;display:flex;flex-direction:column;gap:16px;">
+
+      <div>
+        <p style="font-size:0.875rem;color:#444;margin-bottom:10px;font-weight:600;">Eliminar duplicados por columna (opcional)</p>
+        <div class="dedup-row">
+          <label for="dedup-select">Columna clave:</label>
+          <select id="dedup-select">
+            <option value="">— Fila completa —</option>
+          </select>
+        </div>
+        <p style="font-size:0.77rem;color:#888;margin-top:6px;">Si eliges una columna, se eliminan filas con el mismo valor en esa columna.</p>
       </div>
-      <p style="font-size:0.77rem;color:#888;margin-top:6px;">Si eliges una columna, se eliminan filas con el mismo valor en esa columna.</p>
+
+      <div>
+        <p style="font-size:0.875rem;color:#444;margin-bottom:10px;font-weight:600;">En caso de duplicado, ¿qué archivo prevalece?</p>
+        <div class="dedup-row">
+          <label for="priority-select">Archivo prioritario:</label>
+          <select id="priority-select">
+            <option value="">— El primero subido —</option>
+          </select>
+        </div>
+        <p style="font-size:0.77rem;color:#888;margin-top:6px;">Los datos del archivo elegido reemplazarán a los del resto cuando haya un registro duplicado.</p>
+      </div>
+
     </div>
 
     <div class="action-row">
@@ -285,6 +300,7 @@
   const selAllBtn   = document.getElementById('select-all-btn');
   const deselAllBtn = document.getElementById('deselect-all-btn');
   const dedupSel    = document.getElementById('dedup-select');
+  const prioritySel = document.getElementById('priority-select');
   const mergeBtn    = document.getElementById('merge-btn');
   const resultCard  = document.getElementById('result-card');
   const uploadErr   = document.getElementById('upload-error');
@@ -357,6 +373,7 @@
       storedStyles   = data.column_styles || {};
       renderColumnList(data.columns);
       populateDedupSelect(data.columns);
+      populatePrioritySelect(data.files);
       colsCard.classList.remove('hidden');
       colsCard.scrollIntoView({ behavior: 'smooth' });
     } catch (e) {
@@ -493,6 +510,16 @@
     });
   }
 
+  function populatePrioritySelect(files) {
+    prioritySel.innerHTML = '<option value="">— El primero subido —</option>';
+    files.forEach(f => {
+      const o = document.createElement('option');
+      o.value = f.name;
+      o.textContent = `${f.name} (${f.rows} filas)`;
+      prioritySel.appendChild(o);
+    });
+  }
+
   function getSelectedColumns() {
     return [...colsList.querySelectorAll('.col-item')]
       .filter(d => d.querySelector('input').checked)
@@ -519,6 +546,7 @@
           columns: cols,
           column_styles: storedStyles,
           dedup_column: dedupSel.value || null,
+          priority_file: prioritySel.value || null,
           file_data: storedFileData
         })
       });
@@ -557,6 +585,7 @@
   // ── Restart ────────────────────────────────────────────────────────
   restartBtn.addEventListener('click', () => {
     selectedFiles = []; storedFileData = []; storedStyles = {}; pendingDownload = null;
+    prioritySel.innerHTML = '<option value="">— El primero subido —</option>';
     renderFileList();
     uploadBtn.disabled = true;
     colsCard.classList.add('hidden');

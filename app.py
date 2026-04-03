@@ -115,13 +115,20 @@ def upload_files():
 @app.route('/merge', methods=['POST'])
 def merge_files():
     data = request.get_json()
-    column_order   = data.get('columns', [])   # ordered list
+    column_order   = data.get('columns', [])
     column_styles  = data.get('column_styles', {})
     dedup_column   = data.get('dedup_column') or None
+    priority_file  = data.get('priority_file') or None   # filename that wins on conflict
     file_data_list = data.get('file_data', [])
 
     if not column_order or not file_data_list:
         return jsonify({'error': 'Faltan parámetros'}), 400
+
+    # Move priority file to the front so keep='first' makes it win
+    if priority_file:
+        priority = [fd for fd in file_data_list if fd['name'] == priority_file]
+        others   = [fd for fd in file_data_list if fd['name'] != priority_file]
+        file_data_list = priority + others
 
     dfs = []
     for fd in file_data_list:
