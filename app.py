@@ -354,6 +354,7 @@ def confirm():
     file_data_list  = data.get('file_data', [])
     homologation    = data.get('homologation', {})    # {col: {old: new}}
     rows_to_delete  = set(data.get('rows_to_delete', []))
+    user_reviewed   = data.get('user_reviewed', False) # True = user saw & confirmed the review UI
 
     if not column_order or not file_data_list:
         return jsonify({'error': 'Faltan parámetros'}), 400
@@ -372,15 +373,18 @@ def confirm():
 
     before = len(merged)
 
-    if rows_to_delete:
-        # User made explicit decisions — apply them
-        merged = merged[~merged['__row_id__'].isin(rows_to_delete)]
-    elif dedup_column and dedup_column in merged.columns:
-        # No explicit decisions → default dedup
-        merged = merged.drop_duplicates(subset=[dedup_column], keep='first')
+    if user_reviewed:
+        # User went through the review UI — only delete what they explicitly chose
+        if rows_to_delete:
+            merged = merged[~merged['__row_id__'].isin(rows_to_delete)]
+        # If rows_to_delete is empty here it means the user chose "Conservar todos" → keep everything
     else:
-        merged = merged.drop_duplicates(
-            subset=[c for c in final_cols if c in merged.columns], keep='first')
+        # Fast path (no duplicates found) → apply default dedup
+        if dedup_column and dedup_column in merged.columns:
+            merged = merged.drop_duplicates(subset=[dedup_column], keep='first')
+        else:
+            merged = merged.drop_duplicates(
+                subset=[c for c in final_cols if c in merged.columns], keep='first')
 
     duplicates_removed = before - len(merged)
     merged = merged[final_cols]

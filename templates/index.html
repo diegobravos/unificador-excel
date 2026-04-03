@@ -714,7 +714,7 @@
 
       if (!hasSim && !hasDup) {
         // Fast path: nothing to review, confirm directly
-        await doConfirm({}, []);
+        await doConfirm({}, [], false);
       } else {
         renderReviewCard(data);
         reviewCard.classList.remove('hidden');
@@ -910,14 +910,14 @@
       });
     }
 
-    await doConfirm(homologation, rowsToDelete);
+    await doConfirm(homologation, rowsToDelete, true);
   });
 
-  async function doConfirm(homologation, rowsToDelete) {
+  async function doConfirm(homologation, rowsToDelete, userReviewed = false) {
     confirmBtn.innerHTML = '<span class="spinner"></span> Generando Excel...';
     confirmBtn.disabled = true;
 
-    const payload = { ...buildPayload(), homologation, rows_to_delete: rowsToDelete };
+    const payload = { ...buildPayload(), homologation, rows_to_delete: rowsToDelete, user_reviewed: userReviewed };
 
     try {
       const res  = await fetch('/confirm', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
