@@ -109,6 +109,121 @@ def extract_header_styles(file_bytes, filename, sheet_name=None):
     return styles
 
 
+# ── Spell check helpers ────────────────────────────────────────────────────────
+
+_PROPER_NAMES = [
+    # Apellidos comunes con tilde o ñ
+    'García', 'López', 'Martínez', 'González', 'Rodríguez', 'Hernández',
+    'Pérez', 'Sánchez', 'Ramírez', 'Gómez', 'Díaz', 'Álvarez',
+    'Gutiérrez', 'Jiménez', 'Muñoz', 'Domínguez', 'Núñez', 'Valdés',
+    'Ríos', 'Suárez', 'Fernández', 'Cortés', 'Méndez', 'Vélez',
+    'Benítez', 'Ibáñez', 'Córdoba', 'Zárate', 'Ordóñez', 'Céspedes',
+    'Dávila', 'León', 'Guzmán', 'Vásquez', 'Peñaloza', 'Cárdenas',
+    'Báez', 'Aráoz', 'Avilés', 'Aristizábal', 'Estévez', 'Páez',
+    'Téllez', 'Chávez', 'Añez', 'Yáñez', 'Jáuregui', 'Gálvez',
+    # Nombres propios con tilde o ñ
+    'María', 'José', 'Ángel', 'Ramón', 'Andrés', 'Tomás', 'Víctor',
+    'Álvaro', 'Héctor', 'Mónica', 'Néstor', 'Adrián', 'Sebastián',
+    'Rubén', 'René', 'César', 'Nicolás', 'Damián', 'Fabián', 'Julián',
+    'Germán', 'Simón', 'Agustín', 'Martín', 'Benjamín', 'Raúl', 'Saúl',
+    'Óscar', 'Sofía', 'Verónica', 'Inés', 'Aníbal', 'Hernán',
+    'Cristián', 'Valentín', 'Belén', 'Vivián', 'Érica', 'Úrsula',
+    'Débora', 'Yésica', 'Mónica', 'Ángela', 'Azucena', 'Angélica',
+    'Cintia', 'Mirián', 'Noé', 'Matías', 'Elías', 'Isaías', 'Tomás',
+]
+
+def _strip_accents(s):
+    """Quita tildes y diéresis (ñ → n, á → a, etc.)."""
+    return ''.join(
+        c for c in unicodedata.normalize('NFD', s)
+        if unicodedata.category(c) != 'Mn'
+    )
+
+# Mapa: forma normalizada (sin tildes, minúsculas) → forma correcta con tildes
+_PROPER_NOUN_FIXES = {_strip_accents(n).lower(): n for n in _PROPER_NAMES}
+
+_spell_es = None
+
+def _get_spell():
+    global _spell_es
+    if _spell_es is None:
+        from spellchecker import SpellChecker
+        _spell_es = SpellChecker(language='es')
+    return _spell_es
+
+
+def find_spelling_issues(df, columns, max_issues_per_col=50):
+    """
+    Detecta errores ortográficos en columnas de texto.
+    - Palabras Title Case → revisión en _PROPER_NOUN_FIXES (tildes en nombres propios).
+    - Palabras lowercase  → revisión con pyspellchecker (palabras comunes en español).
+    Retorna lista de {column, issues: [{original_cell, word, suggested_word, count}]}
+    """
+    spell = _get_spell()
+    result = []
+
+    for col in columns:
+        if col not in df.columns:
+            continue
+        series = df[col].dropna().astype(str)
+        if series.empty:
+            continue
+        # Saltar columnas puramente numéricas
+        if pd.to_numeric(series, errors='coerce').notna().mean() > 0.8:
+            continue
+
+        counts     = series.value_counts()
+        col_issues = []
+        seen_cells = set()
+
+        for cell_val, cnt in counts.items():
+            if cell_val in seen_cells or len(col_issues) >= max_issues_per_col:
+                break
+
+            # Tokenize: solo palabras (letras + apóstrofe), largo mínimo 3
+            words = re.findall(r"[A-Za-záéíóúüÁÉÍÓÚÜñÑ']{3,}", cell_val)
+            for word in words:
+                letters = [c for c in word if c.isalpha()]
+                if not letters:
+                    continue
+
+                # Rama 1: Title Case → revisión de nombre propio (solo tildes)
+                if word[0].isupper() and not word.isupper():
+                    key = _strip_accents(word).lower()
+                    correct = _PROPER_NOUN_FIXES.get(key)
+                    if correct and correct != word:
+                        col_issues.append({
+                            'original_cell': cell_val,
+                            'word':          word,
+                            'suggested_word': correct,
+                            'count':         int(cnt),
+                            'kind':          'nombre_propio',
+                        })
+                        seen_cells.add(cell_val)
+                        break  # una corrección por celda
+
+                # Rama 2: lowercase → revisión con pyspellchecker
+                elif word.islower():
+                    misspelled = spell.unknown([word])
+                    if misspelled:
+                        correction = spell.correction(word)
+                        if correction and correction != word:
+                            col_issues.append({
+                                'original_cell': cell_val,
+                                'word':          word,
+                                'suggested_word': correction,
+                                'count':         int(cnt),
+                                'kind':          'comun',
+                            })
+                            seen_cells.add(cell_val)
+                            break  # una corrección por celda
+
+        if col_issues:
+            result.append({'column': col, 'issues': col_issues})
+
+    return result
+
+
 # ── Analysis helpers ───────────────────────────────────────────────────────────
 
 def normalize_string(s):
@@ -156,6 +271,115 @@ def find_similar_values(df, columns):
         if col_groups:
             suggestions.append({'column': col, 'groups': col_groups})
     return suggestions
+
+
+def detect_casing_issue(value):
+    """
+    Detecta el tipo de problema de capitalización en un string.
+    Retorna (issue_type, suggested) o (None, None) si no hay problema.
+    """
+    s = str(value).strip()
+    # Saltar si es muy corto, numérico, email, URL o código
+    if len(s) <= 1:
+        return None, None
+    if re.match(r'^[\d\s\-_/\\.,;:@#$%&*()\[\]{}]+$', s):
+        return None, None
+    if re.match(r'^[\w\.-]+@[\w\.-]+\.\w+$', s):  # email
+        return None, None
+    if re.match(r'^https?://', s):  # URL
+        return None, None
+
+    words = s.split()
+    alpha_words = [w for w in words if any(c.isalpha() for c in w)]
+    if not alpha_words:
+        return None, None
+
+    # Mezcla rara: tiene mayúsculas en posición inusual (ej: sANTIAGO, hOLA)
+    def is_weird_mixed(w):
+        letters = [c for c in w if c.isalpha()]
+        if len(letters) < 3:
+            return False
+        # Si la primera letra es minúscula y hay mayúsculas después → raro
+        if letters[0].islower() and any(c.isupper() for c in letters[1:]):
+            return True
+        # Si hay mayúsculas en el medio que no son la primera → raro
+        if letters[0].isupper() and letters[1].isupper() and letters[-1].islower():
+            # podría ser acrónimo, no marcar
+            pass
+        return False
+
+    has_weird = any(is_weird_mixed(w) for w in alpha_words)
+    all_upper = all(w.isupper() for w in alpha_words)
+    all_lower = all(w.islower() for w in alpha_words)
+
+    def _title_word(w):
+        result, cap = [], True
+        for ch in w:
+            if ch.isalpha():
+                result.append(ch.upper() if cap else ch.lower())
+                cap = False
+            else:
+                result.append(ch)
+                cap = True
+        return ''.join(result)
+    suggested = ' '.join(_title_word(w) for w in words)
+
+    if has_weird:
+        return 'mezcla_rara', suggested
+    if all_upper and len(s) > 2:
+        return 'todo_mayusculas', suggested
+    if all_lower and len(alpha_words) >= 1:
+        # Solo reportar minúsculas si parece nombre propio (más de una palabra
+        # o empieza con minúscula siendo la primera palabra)
+        if len(alpha_words) > 1 or (len(alpha_words) == 1 and len(alpha_words[0]) > 2):
+            return 'todo_minusculas', suggested
+    return None, None
+
+
+def find_casing_issues(df, columns, max_issues_per_col=50):
+    """
+    Recorre columnas de texto y detecta problemas de capitalización.
+    Retorna lista de {column, issues: [{original, suggested, issue_type, count}]}
+    """
+    result = []
+    issue_labels = {
+        'todo_mayusculas': 'TODO EN MAYÚSCULAS',
+        'todo_minusculas': 'todo en minúsculas',
+        'mezcla_rara':     'Mezcla rara de mayúsculas',
+    }
+
+    for col in columns:
+        if col not in df.columns:
+            continue
+        series = df[col].dropna().astype(str)
+        if series.empty:
+            continue
+        # Saltar columnas puramente numéricas
+        if pd.to_numeric(series, errors='coerce').notna().mean() > 0.8:
+            continue
+
+        counts    = series.value_counts()
+        col_issues = []
+        seen       = set()
+
+        for val, cnt in counts.items():
+            if val in seen or len(col_issues) >= max_issues_per_col:
+                break
+            issue_type, suggested = detect_casing_issue(val)
+            if issue_type and suggested and suggested != val:
+                seen.add(val)
+                col_issues.append({
+                    'original':   val,
+                    'suggested':  suggested,
+                    'issue_type': issue_type,
+                    'label':      issue_labels.get(issue_type, issue_type),
+                    'count':      int(cnt),
+                })
+
+        if col_issues:
+            result.append({'column': col, 'issues': col_issues})
+
+    return result
 
 
 def find_duplicate_groups(df, dedup_column, max_groups=50):
@@ -332,6 +556,8 @@ def preview():
 
     similarity_suggestions = find_similar_values(merged[final_cols], final_cols)
     duplicate_groups       = find_duplicate_groups(merged, dedup_column)
+    casing_issues          = find_casing_issues(merged, final_cols)
+    spelling_issues        = find_spelling_issues(merged[final_cols], final_cols)
     truncated              = len(duplicate_groups) == 50
 
     return jsonify({
@@ -339,6 +565,8 @@ def preview():
         'total_rows':            len(merged),
         'duplicate_groups':      duplicate_groups,
         'similarity_suggestions': similarity_suggestions,
+        'casing_issues':         casing_issues,
+        'spelling_issues':       spelling_issues,
         'truncated_duplicates':  truncated,
     })
 
@@ -354,7 +582,10 @@ def confirm():
     file_data_list  = data.get('file_data', [])
     homologation    = data.get('homologation', {})    # {col: {old: new}}
     rows_to_delete  = set(data.get('rows_to_delete', []))
-    user_reviewed   = data.get('user_reviewed', False) # True = user saw & confirmed the review UI
+    shown_row_ids   = set(data.get('shown_row_ids', []))
+    casing_fixes    = data.get('casing_fixes', {})    # {col: {original: suggested}}
+    spelling_fixes  = data.get('spelling_fixes', {})  # {col: {original_cell: corrected_cell}}
+    user_reviewed   = data.get('user_reviewed', False)
 
     if not column_order or not file_data_list:
         return jsonify({'error': 'Faltan parámetros'}), 400
@@ -371,13 +602,27 @@ def confirm():
         if col in merged.columns:
             merged[col] = merged[col].replace(mapping)
 
+    # Apply casing fixes
+    for col, mapping in casing_fixes.items():
+        if col in merged.columns:
+            merged[col] = merged[col].replace(mapping)
+
+    # Apply spelling fixes
+    for col, mapping in spelling_fixes.items():
+        if col in merged.columns:
+            merged[col] = merged[col].replace(mapping)
+
     before = len(merged)
 
     if user_reviewed:
-        # User went through the review UI — only delete what they explicitly chose
         if rows_to_delete:
             merged = merged[~merged['__row_id__'].isin(rows_to_delete)]
-        # If rows_to_delete is empty here it means the user chose "Conservar todos" → keep everything
+        # Dedup rows not shown in the review UI (groups beyond the 50-group limit)
+        if dedup_column and dedup_column in merged.columns:
+            in_shown     = merged['__row_id__'].isin(shown_row_ids)
+            shown_part   = merged[in_shown]
+            unshown_part = merged[~in_shown].drop_duplicates(subset=[dedup_column], keep='first')
+            merged = pd.concat([shown_part, unshown_part]).sort_values('__row_id__')
     else:
         # Fast path (no duplicates found) → apply default dedup
         if dedup_column and dedup_column in merged.columns:

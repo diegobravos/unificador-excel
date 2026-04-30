@@ -1,29 +1,30 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+  <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Unificador de Planillas Excel de Diego Bravo 🤩</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: Arial, sans-serif; background: #0f1117; color: #e8e8f0; min-height: 100vh; }
+    body { font-family: Arial, sans-serif; background: #f0f2f5; color: #333; min-height: 100vh; }
 
     header {
-      background: #1a1f2e; color: #e8e8f0;
-      padding: 20px 32px; box-shadow: 0 2px 6px rgba(0,0,0,0.4); border-bottom: 1px solid #2e3350;
+      background: #1a73e8; color: white;
+      padding: 20px 32px; box-shadow: 0 2px 6px rgba(0,0,0,0.15);
     }
     header h1 { font-size: 1.5rem; font-weight: 600; }
-    header p  { font-size: 0.875rem; opacity: 0.7; margin-top: 4px; }
+    header p  { font-size: 0.875rem; opacity: 0.85; margin-top: 4px; }
 
     main { max-width: 900px; margin: 32px auto; padding: 0 16px; display: flex; flex-direction: column; gap: 24px; }
 
     .card {
-      background: #1c1e2a; border-radius: 12px; padding: 28px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.3); border: 1px solid #2a2d3e;
+      background: white; border-radius: 12px; padding: 28px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
     }
     .card h2 {
       font-size: 1rem; font-weight: 600; margin-bottom: 16px;
-      color: #6c9fff; display: flex; align-items: center; gap: 8px;
+      color: #1a73e8; display: flex; align-items: center; gap: 8px;
     }
     .card h2 .step {
       background: #1a73e8; color: white; width: 24px; height: 24px;
@@ -33,41 +34,41 @@
 
     /* Drop zone */
     .drop-zone {
-      border: 2px dashed #3a3f5c; border-radius: 10px; padding: 40px 20px;
-      text-align: center; cursor: pointer; transition: all 0.2s; background: #161821;
+      border: 2px dashed #c5cae9; border-radius: 10px; padding: 40px 20px;
+      text-align: center; cursor: pointer; transition: all 0.2s; background: #fafbff;
     }
-    .drop-zone:hover, .drop-zone.drag-over { border-color: #1a73e8; background: #1a2340; }
-    .drop-zone svg  { color: #4a5080; margin-bottom: 10px; }
-    .drop-zone p    { color: #a0a4c0; font-size: 0.9rem; }
-    .drop-zone span { color: #6c9fff; font-weight: 600; }
+    .drop-zone:hover, .drop-zone.drag-over { border-color: #1a73e8; background: #e8f0fe; }
+    .drop-zone svg  { color: #9aa0c7; margin-bottom: 10px; }
+    .drop-zone p    { color: #555; font-size: 0.9rem; }
+    .drop-zone span { color: #1a73e8; font-weight: 600; }
     #file-input { display: none; }
 
     #file-list { margin-top: 14px; display: flex; flex-direction: column; gap: 8px; }
     .file-item {
       display: flex; align-items: center; gap: 10px;
-      background: #252838; border-radius: 8px; padding: 10px 14px; font-size: 0.85rem; border: 1px solid #2e3350;
+      background: #f1f3f9; border-radius: 8px; padding: 10px 14px; font-size: 0.85rem;
     }
-    .file-item svg        { color: #6c9fff; flex-shrink: 0; }
-    .file-item .file-name { font-weight: 500; flex: 1; color: #e8e8f0; }
-    .file-item .file-meta { color: #6a6f8e; font-size: 0.78rem; }
+    .file-item svg        { color: #1a73e8; flex-shrink: 0; }
+    .file-item .file-name { font-weight: 500; flex: 1; }
+    .file-item .file-meta { color: #777; font-size: 0.78rem; }
 
     /* Sheet panel */
     #sheet-panel { margin-top: 20px; }
     .sheet-panel-title {
-      font-size: 0.875rem; font-weight: 600; color: #a0a4c0;
+      font-size: 0.875rem; font-weight: 600; color: #444;
       margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
     }
     .sheet-rows { display: flex; flex-direction: column; gap: 8px; }
     .sheet-row {
       display: flex; align-items: center; gap: 12px;
-      background: #252838; border: 1px solid #2e3350;
+      background: #f8f9fc; border: 1px solid #e4e8f5;
       border-radius: 8px; padding: 10px 14px; flex-wrap: wrap;
     }
-    .sheet-row .sr-filename { font-size: 0.85rem; font-weight: 500; flex: 1; min-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #e8e8f0; }
-    .sheet-row .sr-badge    { font-size: 0.72rem; background: #1a2d52; color: #6c9fff; border-radius: 12px; padding: 2px 8px; white-space: nowrap; }
-    .sheet-row select       { padding: 6px 10px; border: 1px solid #3a3f5c; border-radius: 6px; font-size: 0.82rem; outline: none; background: #1c1e2a; color: #e8e8f0; min-width: 160px; }
+    .sheet-row .sr-filename { font-size: 0.85rem; font-weight: 500; flex: 1; min-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sheet-row .sr-badge    { font-size: 0.72rem; background: #e8f0fe; color: #1a73e8; border-radius: 12px; padding: 2px 8px; white-space: nowrap; }
+    .sheet-row select       { padding: 6px 10px; border: 1px solid #c5cae9; border-radius: 6px; font-size: 0.82rem; outline: none; background: white; min-width: 160px; }
     .sheet-row select:focus { border-color: #1a73e8; }
-    .sheet-row .sr-single   { font-size: 0.82rem; color: #6a6f8e; font-style: italic; }
+    .sheet-row .sr-single   { font-size: 0.82rem; color: #666; font-style: italic; }
 
     /* Buttons */
     .btn {
@@ -78,18 +79,18 @@
     }
     .btn-primary  { background: #1a73e8; color: white; }
     .btn-primary:hover  { background: #1558c0; }
-    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
     .btn-analyze  { background: #e37400; color: white; }
     .btn-analyze:hover  { background: #c46200; }
-    .btn-analyze:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-analyze:disabled { opacity: 0.5; cursor: not-allowed; }
     .btn-confirm  { background: #34a853; color: white; }
     .btn-confirm:hover  { background: #2d8f46; }
-    .btn-confirm:disabled { opacity: 0.4; cursor: not-allowed; }
-    .btn-download { background: #fbbc04; color: #1a1a1a; }
+    .btn-confirm:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-download { background: #fbbc04; color: #333; }
     .btn-download:hover { background: #f0a800; }
     .btn-sm     { padding: 7px 14px; font-size: 0.8rem; border-radius: 6px; }
-    .btn-outline { background: #252838; border: 1px solid #3a3f5c; color: #c0c4e0; }
-    .btn-outline:hover { background: #2e3350; border-color: #6c9fff; }
+    .btn-outline { background: white; border: 1px solid #c5cae9; color: #444; }
+    .btn-outline:hover { background: #f0f2ff; border-color: #1a73e8; }
 
     /* Columns */
     .columns-toolbar {
@@ -97,47 +98,46 @@
     }
     .columns-toolbar input[type="text"] {
       flex: 1; min-width: 180px; padding: 8px 12px;
-      border: 1px solid #3a3f5c; border-radius: 8px; font-size: 0.85rem; outline: none;
-      background: #1c1e2a; color: #e8e8f0;
+      border: 1px solid #d0d5e8; border-radius: 8px; font-size: 0.85rem; outline: none;
     }
     .columns-toolbar input:focus { border-color: #1a73e8; }
-    .drag-hint { font-size: 0.77rem; color: #6a6f8e; margin-bottom: 10px; display: flex; align-items: center; gap: 5px; }
+    .drag-hint { font-size: 0.77rem; color: #888; margin-bottom: 10px; display: flex; align-items: center; gap: 5px; }
 
     #columns-list { display: flex; flex-direction: column; gap: 6px; max-height: 360px; overflow-y: auto; padding: 2px; }
     .col-item {
       display: flex; align-items: center; gap: 10px; padding: 9px 12px;
-      border: 1px solid #2e3350; border-radius: 8px; background: #252838;
+      border: 1px solid #e0e4f0; border-radius: 8px; background: white;
       font-size: 0.85rem; user-select: none; transition: border-color 0.15s, background 0.15s;
     }
-    .col-item:hover            { border-color: #1a73e8; background: #1e2540; }
-    .col-item.checked          { border-color: #1a73e8; background: #1a2d52; }
+    .col-item:hover            { border-color: #1a73e8; background: #f0f6ff; }
+    .col-item.checked          { border-color: #1a73e8; background: #e8f0fe; }
     .col-item.dragging         { opacity: 0.4; }
     .col-item.drag-over-top    { border-top: 2px solid #1a73e8; }
     .col-item.drag-over-bottom { border-bottom: 2px solid #1a73e8; }
-    .drag-handle { cursor: grab; color: #4a5080; flex-shrink: 0; display: flex; align-items: center; padding: 2px 4px; border-radius: 4px; }
-    .drag-handle:hover  { color: #6c9fff; background: #1e2540; }
+    .drag-handle { cursor: grab; color: #aaa; flex-shrink: 0; display: flex; align-items: center; padding: 2px 4px; border-radius: 4px; }
+    .drag-handle:hover  { color: #1a73e8; background: #dce8fc; }
     .drag-handle:active { cursor: grabbing; }
     .col-item input[type="checkbox"] { width: 16px; height: 16px; accent-color: #1a73e8; cursor: pointer; flex-shrink: 0; }
-    .col-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #e8e8f0; }
-    .col-order { font-size: 0.72rem; color: #4a5080; flex-shrink: 0; min-width: 18px; text-align: right; }
+    .col-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .col-order { font-size: 0.72rem; color: #aaa; flex-shrink: 0; min-width: 18px; text-align: right; }
 
     /* Dedup / priority */
     .dedup-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-    .dedup-row label { font-size: 0.875rem; color: #a0a4c0; }
+    .dedup-row label { font-size: 0.875rem; color: #444; }
     .dedup-row select {
-      padding: 8px 12px; border: 1px solid #3a3f5c; border-radius: 8px;
-      font-size: 0.85rem; outline: none; background: #1c1e2a; color: #e8e8f0; min-width: 200px;
+      padding: 8px 12px; border: 1px solid #d0d5e8; border-radius: 8px;
+      font-size: 0.85rem; outline: none; background: white; min-width: 200px;
     }
     .dedup-row select:focus { border-color: #1a73e8; }
 
     /* Review card */
     #review-card { border-left: 4px solid #e37400; }
-    #review-card h2 { color: #ffaa44; }
+    #review-card h2 { color: #e37400; }
     #review-card h2 .step { background: #e37400; }
 
     .review-section { margin-bottom: 28px; }
     .review-section-title {
-      font-size: 0.9rem; font-weight: 600; color: #c0c4e0;
+      font-size: 0.9rem; font-weight: 600; color: #333;
       margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
     }
     .review-section-title .badge {
@@ -146,94 +146,150 @@
     }
 
     /* Similarity review */
-    .sim-col-block { margin-bottom: 14px; border: 1px solid #2e3350; border-radius: 10px; overflow: hidden; }
+    .sim-col-block { margin-bottom: 14px; border: 1px solid #e8e8e8; border-radius: 10px; overflow: hidden; }
     .sim-col-header {
-      background: #252838; padding: 10px 14px; font-size: 0.85rem;
-      font-weight: 600; display: flex; align-items: center; gap: 8px; cursor: pointer; color: #e8e8f0;
+      background: #f5f5f5; padding: 10px 14px; font-size: 0.85rem;
+      font-weight: 600; display: flex; align-items: center; gap: 8px; cursor: pointer;
     }
-    .sim-col-header:hover { background: #2e3350; }
+    .sim-col-header:hover { background: #ececec; }
     .sim-col-body { padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
     .sim-group-row {
       display: flex; align-items: flex-start; gap: 10px;
-      padding: 8px 10px; background: #1c1e2a; border-radius: 8px; border: 1px solid #2e3350;
+      padding: 8px 10px; background: #fafafa; border-radius: 8px; border: 1px solid #eee;
     }
     .sim-group-row input[type="checkbox"] { margin-top: 3px; accent-color: #e37400; flex-shrink: 0; }
     .sim-group-content { flex: 1; display: flex; flex-direction: column; gap: 6px; }
-    .sim-group-label { font-size: 0.78rem; color: #6a6f8e; }
+    .sim-group-label { font-size: 0.78rem; color: #777; }
     .sim-canonical-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-    .sim-canonical-row span { font-size: 0.78rem; color: #a0a4c0; }
+    .sim-canonical-row span { font-size: 0.78rem; color: #555; }
     .sim-canonical-row input[type="text"] {
-      padding: 4px 10px; border: 1px solid #3a3f5c; border-radius: 6px;
-      font-size: 0.85rem; outline: none; width: 180px; background: #1c1e2a; color: #e8e8f0;
+      padding: 4px 10px; border: 1px solid #c5cae9; border-radius: 6px;
+      font-size: 0.85rem; outline: none; width: 180px;
     }
     .sim-canonical-row input:focus { border-color: #e37400; }
     .sim-variants { display: flex; flex-wrap: wrap; gap: 6px; }
     .sim-variant-chip {
-      background: #2a1f0e; color: #ffaa44; border: 1px solid #5a3a10;
+      background: #fff3e0; color: #e37400; border: 1px solid #ffcc80;
       border-radius: 12px; padding: 2px 10px; font-size: 0.78rem;
     }
 
     /* Duplicate review */
     .dup-group-card {
-      border: 1px solid #2e3350; border-radius: 10px;
+      border: 1px solid #e0e4f0; border-radius: 10px;
       margin-bottom: 14px; overflow: hidden;
     }
     .dup-group-header {
-      background: #252838; padding: 10px 14px; font-size: 0.85rem;
-      font-weight: 600; display: flex; align-items: center; gap: 10px; color: #e8e8f0;
+      background: #f5f7ff; padding: 10px 14px; font-size: 0.85rem;
+      font-weight: 600; display: flex; align-items: center; gap: 10px;
     }
     .dup-group-header .src-badges { display: flex; gap: 6px; flex-wrap: wrap; }
     .src-badge {
       font-size: 0.72rem; padding: 2px 8px; border-radius: 12px; font-weight: 500;
     }
-    .src-badge-0 { background: #1a2d52; color: #6c9fff; }
-    .src-badge-1 { background: #1a3328; color: #4caf78; }
-    .src-badge-2 { background: #3a1a1a; color: #f08080; }
-    .src-badge-3 { background: #2a1f0e; color: #ffaa44; }
+    .src-badge-0 { background: #e8f0fe; color: #1a73e8; }
+    .src-badge-1 { background: #e6f4ea; color: #34a853; }
+    .src-badge-2 { background: #fce8e6; color: #ea4335; }
+    .src-badge-3 { background: #fff3e0; color: #e37400; }
 
     .dup-table-wrap { overflow-x: auto; }
     .dup-table {
       width: 100%; border-collapse: collapse; font-size: 0.82rem;
     }
     .dup-table th {
-      background: #252838; padding: 8px 10px; text-align: left;
-      border-bottom: 1px solid #2e3350; white-space: nowrap; color: #a0a4c0;
+      background: #f8f9fc; padding: 8px 10px; text-align: left;
+      border-bottom: 1px solid #e0e4f0; white-space: nowrap; color: #555;
     }
     .dup-table td {
-      padding: 8px 10px; border-bottom: 1px solid #22243a; color: #e8e8f0;
+      padding: 8px 10px; border-bottom: 1px solid #f0f0f0;
       max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
     .dup-table tr:last-child td { border-bottom: none; }
-    .dup-table tr.selected-row td { background: #1a2d52; }
+    .dup-table tr.selected-row td { background: #e8f0fe; }
     .dup-radio { accent-color: #1a73e8; cursor: pointer; }
-    .dup-keep-all-row { padding: 8px 14px; background: #1c1e2a; border-top: 1px solid #2e3350; }
-    .dup-keep-all-row label { font-size: 0.82rem; color: #a0a4c0; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+    .dup-keep-all-row { padding: 8px 14px; background: #f9f9f9; border-top: 1px solid #eee; }
+    .dup-keep-all-row label { font-size: 0.82rem; color: #555; cursor: pointer; display: flex; align-items: center; gap: 8px; }
 
     .truncation-warning {
-      background: #2a1f0e; border: 1px solid #5a3a10; border-radius: 8px;
-      padding: 10px 14px; font-size: 0.82rem; color: #ffaa44; margin-bottom: 14px;
+      background: #fff3e0; border: 1px solid #ffcc80; border-radius: 8px;
+      padding: 10px 14px; font-size: 0.82rem; color: #7a4400; margin-bottom: 14px;
     }
+
+    /* Casing review */
+    .cas-col-block { margin-bottom: 14px; border: 1px solid #e8e8e8; border-radius: 10px; overflow: hidden; }
+    .cas-col-header {
+      background: #f5f5f5; padding: 10px 14px; font-size: 0.85rem;
+      font-weight: 600; display: flex; align-items: center; gap: 8px; cursor: pointer;
+    }
+    .cas-col-header:hover { background: #ececec; }
+    .cas-col-body { padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+    .cas-issue-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 10px; background: #fafafa; border-radius: 8px; border: 1px solid #eee;
+      flex-wrap: wrap;
+    }
+    .cas-issue-row input[type="checkbox"] { accent-color: #8e24aa; flex-shrink: 0; }
+    .cas-type-badge {
+      font-size: 0.72rem; padding: 2px 8px; border-radius: 12px; font-weight: 500;
+      background: #f3e5f5; color: #6a1b9a; white-space: nowrap;
+    }
+    .cas-arrow { color: #aaa; font-size: 1rem; flex-shrink: 0; }
+    .cas-original  { font-size: 0.85rem; color: #c62828; text-decoration: line-through; flex: 1; min-width: 120px; word-break: break-all; }
+    .cas-suggested-wrap { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 120px; }
+    .cas-suggested-input {
+      padding: 4px 10px; border: 1px solid #c5cae9; border-radius: 6px;
+      font-size: 0.85rem; outline: none; width: 100%; max-width: 220px;
+    }
+    .cas-suggested-input:focus { border-color: #8e24aa; }
+    .cas-count { font-size: 0.75rem; color: #888; white-space: nowrap; }
+
+    /* Spell check review */
+    .spl-col-block { margin-bottom: 14px; border: 1px solid #e8e8e8; border-radius: 10px; overflow: hidden; }
+    .spl-col-header {
+      background: #f5f5f5; padding: 10px 14px; font-size: 0.85rem;
+      font-weight: 600; display: flex; align-items: center; gap: 8px; cursor: pointer;
+    }
+    .spl-col-header:hover { background: #ececec; }
+    .spl-col-body { padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+    .spl-issue-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 10px; background: #fafafa; border-radius: 8px; border: 1px solid #eee;
+      flex-wrap: wrap;
+    }
+    .spl-issue-row input[type="checkbox"] { accent-color: #00897b; flex-shrink: 0; }
+    .spl-type-badge {
+      font-size: 0.72rem; padding: 2px 8px; border-radius: 12px; font-weight: 500;
+      background: #e0f2f1; color: #00695c; white-space: nowrap;
+    }
+    .spl-arrow { color: #aaa; font-size: 1rem; flex-shrink: 0; }
+    .spl-original  { font-size: 0.85rem; color: #c62828; text-decoration: line-through; flex: 1; min-width: 120px; word-break: break-all; }
+    .spl-suggested-wrap { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 120px; }
+    .spl-suggested-input {
+      padding: 4px 10px; border: 1px solid #c5cae9; border-radius: 6px;
+      font-size: 0.85rem; outline: none; width: 100%; max-width: 220px;
+    }
+    .spl-suggested-input:focus { border-color: #00897b; }
+    .spl-count { font-size: 0.75rem; color: #888; white-space: nowrap; }
 
     /* Result */
     .result-box {
-      background: #152218; border: 1px solid #2d6644; border-radius: 10px; padding: 20px;
+      background: #e6f4ea; border: 1px solid #81c995; border-radius: 10px; padding: 20px;
     }
     .result-stats { display: flex; gap: 24px; margin-bottom: 16px; flex-wrap: wrap; }
     .stat { display: flex; flex-direction: column; align-items: center; }
-    .stat .value { font-size: 1.8rem; font-weight: 700; color: #6c9fff; line-height: 1; }
-    .stat .label { font-size: 0.75rem; color: #a0a4c0; margin-top: 4px; }
-    .stat.warn .value { color: #ffaa44; }
-    .stat.good .value { color: #4caf78; }
+    .stat .value { font-size: 1.8rem; font-weight: 700; color: #1a73e8; line-height: 1; }
+    .stat .label { font-size: 0.75rem; color: #555; margin-top: 4px; }
+    .stat.warn .value { color: #e37400; }
+    .stat.good .value { color: #34a853; }
 
     .hidden { display: none !important; }
     .spinner {
-      width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3);
+      width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.4);
       border-top-color: white; border-radius: 50%;
       animation: spin 0.7s linear infinite; display: inline-block;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
     .alert { padding: 12px 16px; border-radius: 8px; font-size: 0.875rem; margin-top: 12px; }
-    .alert-error { background: #3a1a1a; color: #f08080; border: 1px solid #6a2a2a; }
+    .alert-error { background: #fce8e6; color: #c62828; border: 1px solid #f4b8b2; }
     .action-row { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
   </style>
 </head>
@@ -255,7 +311,7 @@
           d="M12 16v-8m0 0-3 3m3-3 3 3M4.75 17.25A3.75 3.75 0 0 0 8.5 21h7a3.75 3.75 0 0 0 3.75-3.75V8.25L14 3H8.5A3.75 3.75 0 0 0 4.75 6.75v10.5Z"/>
       </svg>
       <p>Arrastra archivos aquí o <span id="browse-btn">haz clic para seleccionar</span></p>
-      <p style="font-size:0.78rem;color:#6a6f8e;margin-top:6px;">Formatos: .xlsx, .xls, .csv</p>
+      <p style="font-size:0.78rem;color:#999;margin-top:6px;">Formatos: .xlsx, .xls, .csv</p>
     </div>
     <input type="file" id="file-input" multiple accept=".xlsx,.xls,.csv" />
     <div id="file-list"></div>
@@ -292,12 +348,12 @@
   <!-- PASO 2: Archivo prioritario -->
   <div class="card hidden" id="priority-card">
     <h2><span class="step">2</span> Archivo prioritario</h2>
-    <p style="font-size:0.875rem;color:#a0a4c0;margin-bottom:14px;">En caso de duplicado, ¿qué archivo prevalece? Sus columnas también se usan como orden de referencia.</p>
+    <p style="font-size:0.875rem;color:#444;margin-bottom:14px;">En caso de duplicado, ¿qué archivo prevalece? Sus columnas también se usan como orden de referencia.</p>
     <div class="dedup-row">
       <label for="priority-select">Archivo prioritario:</label>
       <select id="priority-select"><option value="">— El primero subido —</option></select>
     </div>
-    <p style="font-size:0.77rem;color:#6a6f8e;margin-top:8px;">Sus datos prevalecen en duplicados y sus columnas definen el orden de referencia.</p>
+    <p style="font-size:0.77rem;color:#888;margin-top:8px;">Sus datos prevalecen en duplicados y sus columnas definen el orden de referencia.</p>
     <div class="action-row" style="margin-top:20px;">
       <button class="btn btn-primary" id="continue-step2-btn">
         Continuar
@@ -325,12 +381,12 @@
     <div id="columns-list"></div>
 
     <div style="margin-top:20px;">
-      <p style="font-size:0.875rem;color:#c0c4e0;margin-bottom:10px;font-weight:600;">Eliminar duplicados por columna (opcional)</p>
+      <p style="font-size:0.875rem;color:#444;margin-bottom:10px;font-weight:600;">Eliminar duplicados por columna (opcional)</p>
       <div class="dedup-row">
         <label for="dedup-select">Columna clave:</label>
         <select id="dedup-select"><option value="">— Fila completa —</option></select>
       </div>
-      <p style="font-size:0.77rem;color:#6a6f8e;margin-top:6px;">Si eliges una columna, se eliminan filas con el mismo valor en esa columna.</p>
+      <p style="font-size:0.77rem;color:#888;margin-top:6px;">Si eliges una columna, se eliminan filas con el mismo valor en esa columna.</p>
     </div>
 
     <div class="action-row">
@@ -357,7 +413,7 @@
         Valores similares detectados
         <span class="badge" id="sim-badge">0</span>
       </div>
-      <p style="font-size:0.8rem;color:#6a6f8e;margin-bottom:14px;">Estos valores parecen ser el mismo escrito de forma distinta. Edita el valor canónico y activa los que quieras unificar.</p>
+      <p style="font-size:0.8rem;color:#666;margin-bottom:14px;">Estos valores parecen ser el mismo escrito de forma distinta. Edita el valor canónico y activa los que quieras unificar.</p>
       <div id="sim-body"></div>
     </div>
 
@@ -370,11 +426,37 @@
         Registros duplicados
         <span class="badge" id="dup-badge">0</span>
       </div>
-      <p style="font-size:0.8rem;color:#6a6f8e;margin-bottom:14px;">Elige cuál registro conservar en cada grupo. Por defecto se conserva el del archivo prioritario.</p>
+      <p style="font-size:0.8rem;color:#666;margin-bottom:14px;">Elige cuál registro conservar en cada grupo. Por defecto se conserva el del archivo prioritario.</p>
       <div id="dup-truncation-warning" class="truncation-warning hidden">
         ⚠️ Se encontraron más de 50 grupos de duplicados. Solo se muestran los primeros 50. Los restantes se resolverán conservando el registro del archivo prioritario (o el primero si no hay prioritario).
       </div>
       <div id="dup-body"></div>
+    </div>
+
+    <!-- Casing section -->
+    <div class="review-section hidden" id="cas-section">
+      <div class="review-section-title">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-3-3v6M3 6l3-3m0 0 3 3M6 3v12M21 18l-3 3m0 0-3-3m3 3V9"/>
+        </svg>
+        Problemas de mayúsculas/minúsculas
+        <span class="badge" style="background:#8e24aa;" id="cas-badge">0</span>
+      </div>
+      <p style="font-size:0.8rem;color:#666;margin-bottom:14px;">Se detectaron valores con capitalización inconsistente. Activa los que quieras corregir y edita la sugerencia si necesitas.</p>
+      <div id="cas-body"></div>
+    </div>
+
+    <!-- Spell check section -->
+    <div class="review-section hidden" id="spl-section">
+      <div class="review-section-title">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>
+        </svg>
+        Posibles errores ortográficos
+        <span class="badge" style="background:#00897b;" id="spl-badge">0</span>
+      </div>
+      <p style="font-size:0.8rem;color:#666;margin-bottom:14px;">Se detectaron palabras con posibles errores de ortografía o tildes faltantes. Activa los que quieras corregir.</p>
+      <div id="spl-body"></div>
     </div>
 
     <div class="action-row">
@@ -756,12 +838,14 @@
       if (!res.ok) throw new Error(data.error || 'Error al analizar');
       previewData = data;
 
-      const hasSim = data.similarity_suggestions.length > 0;
-      const hasDup = data.duplicate_groups.length > 0;
+      const hasSim  = data.similarity_suggestions.length > 0;
+      const hasDup  = data.duplicate_groups.length > 0;
+      const hasCas  = (data.casing_issues || []).length > 0;
+      const hasSpell = (data.spelling_issues || []).length > 0;
 
-      if (!hasSim && !hasDup) {
+      if (!hasSim && !hasDup && !hasCas && !hasSpell) {
         // Fast path: nothing to review, confirm directly
-        await doConfirm({}, [], false);
+        await doConfirm({}, [], {}, {}, [], false);
       } else {
         renderReviewCard(data);
         reviewCard.classList.remove('hidden');
@@ -929,6 +1013,117 @@
     } else {
       dupSection.classList.add('hidden');
     }
+
+    // ── Casing section ─────────────────────────────────────────────
+    const casSection = document.getElementById('cas-section');
+    const casBody    = document.getElementById('cas-body');
+    casBody.innerHTML = '';
+    const casingIssues = data.casing_issues || [];
+    const hasCas = casingIssues.length > 0;
+
+    if (hasCas) {
+      const totalIssues = casingIssues.reduce((s, c) => s + c.issues.length, 0);
+      document.getElementById('cas-badge').textContent = totalIssues + ' valores';
+
+      casingIssues.forEach(colData => {
+        const block = document.createElement('div');
+        block.className = 'cas-col-block';
+        block.innerHTML = `
+          <div class="cas-col-header">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+            </svg>
+            Columna: <strong>${colData.column}</strong> — ${colData.issues.length} valor(es)
+          </div>
+          <div class="cas-col-body" id="cas-body-${colData.column.replace(/\W/g,'_')}"></div>`;
+        casBody.appendChild(block);
+
+        const bodyEl = block.querySelector('.cas-col-body');
+        colData.issues.forEach((issue, ii) => {
+          const row = document.createElement('div');
+          row.className = 'cas-issue-row';
+          row.dataset.col      = colData.column;
+          row.dataset.original = issue.original;
+          row.innerHTML = `
+            <input type="checkbox" checked class="cas-toggle" />
+            <span class="cas-type-badge">${issue.label}</span>
+            <span class="cas-original"></span>
+            <span class="cas-arrow">→</span>
+            <div class="cas-suggested-wrap">
+              <input type="text" class="cas-suggested-input" />
+            </div>
+            <span class="cas-count">${issue.count}x</span>`;
+          row.querySelector('.cas-original').textContent = issue.original;
+          row.querySelector('.cas-suggested-input').value = issue.suggested;
+          bodyEl.appendChild(row);
+        });
+
+        block.querySelector('.cas-col-header').addEventListener('click', () => {
+          const b = block.querySelector('.cas-col-body');
+          b.style.display = b.style.display === 'none' ? '' : 'none';
+        });
+      });
+      casSection.classList.remove('hidden');
+    } else {
+      casSection.classList.add('hidden');
+    }
+
+    // ── Spell section ───────────────────────────────────────────────
+    const splSection = document.getElementById('spl-section');
+    const splBody    = document.getElementById('spl-body');
+    splBody.innerHTML = '';
+    const spellingIssues = data.spelling_issues || [];
+    const hasSpell = spellingIssues.length > 0;
+
+    if (hasSpell) {
+      const totalSpell = spellingIssues.reduce((s, c) => s + c.issues.length, 0);
+      document.getElementById('spl-badge').textContent = totalSpell + ' valores';
+
+      spellingIssues.forEach(colData => {
+        const block = document.createElement('div');
+        block.className = 'spl-col-block';
+        block.innerHTML = `
+          <div class="spl-col-header">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+            </svg>
+            Columna: <strong>${colData.column}</strong> — ${colData.issues.length} valor(es)
+          </div>
+          <div class="spl-col-body" id="spl-body-${colData.column.replace(/\W/g,'_')}"></div>`;
+        splBody.appendChild(block);
+
+        const bodyEl = block.querySelector('.spl-col-body');
+        colData.issues.forEach(issue => {
+          const kindLabel = issue.kind === 'nombre_propio' ? 'Nombre propio' : 'Ortografía';
+          const row = document.createElement('div');
+          row.className = 'spl-issue-row';
+          row.dataset.col          = colData.column;
+          row.dataset.originalCell = issue.original_cell;
+          // Build corrected cell: replace the misspelled word with suggestion
+          const correctedCell = issue.original_cell.replace(issue.word, issue.suggested_word);
+          row.innerHTML = `
+            <input type="checkbox" checked class="spl-toggle" />
+            <span class="spl-type-badge">${kindLabel}</span>
+            <span class="spl-original"></span>
+            <span class="spl-arrow">→</span>
+            <div class="spl-suggested-wrap">
+              <input type="text" class="spl-suggested-input" />
+            </div>
+            <span class="spl-count">${issue.count}x</span>`;
+          row.querySelector('.spl-original').textContent = issue.original_cell;
+          row.querySelector('.spl-suggested-input').value = correctedCell;
+          bodyEl.appendChild(row);
+        });
+
+        block.querySelector('.spl-col-header').addEventListener('click', () => {
+          const b = block.querySelector('.spl-col-body');
+          b.style.display = b.style.display === 'none' ? '' : 'none';
+        });
+      });
+      splSection.classList.remove('hidden');
+    } else {
+      splSection.classList.add('hidden');
+    }
   }
 
   // ── Confirm button ────────────────────────────────────────────────
@@ -948,8 +1143,10 @@
 
     // Build rows to delete from duplicate radio buttons
     const rowsToDelete = [];
+    const shownRowIds  = [];
     if (previewData) {
       previewData.duplicate_groups.forEach((grp, gi) => {
+        grp.indices.forEach(idx => shownRowIds.push(idx));
         const selected = document.querySelector(`input[name="dup-${gi}"]:checked`);
         if (!selected || selected.value === '__all__') return;
         const keepId = parseInt(selected.value);
@@ -957,14 +1154,42 @@
       });
     }
 
-    await doConfirm(homologation, rowsToDelete, true);
+    // Build casing fixes map
+    const casingFixes = {};
+    document.querySelectorAll('.cas-issue-row').forEach(row => {
+      const cb = row.querySelector('.cas-toggle');
+      if (!cb.checked) return;
+      const col       = row.dataset.col;
+      const original  = row.dataset.original;
+      const suggested = row.querySelector('.cas-suggested-input').value.trim();
+      if (suggested && suggested !== original) {
+        if (!casingFixes[col]) casingFixes[col] = {};
+        casingFixes[col][original] = suggested;
+      }
+    });
+
+    // Build spelling fixes map
+    const spellingFixes = {};
+    document.querySelectorAll('.spl-issue-row').forEach(row => {
+      const cb = row.querySelector('.spl-toggle');
+      if (!cb.checked) return;
+      const col          = row.dataset.col;
+      const originalCell = row.dataset.originalCell;
+      const suggested    = row.querySelector('.spl-suggested-input').value.trim();
+      if (suggested && suggested !== originalCell) {
+        if (!spellingFixes[col]) spellingFixes[col] = {};
+        spellingFixes[col][originalCell] = suggested;
+      }
+    });
+
+    await doConfirm(homologation, rowsToDelete, casingFixes, spellingFixes, shownRowIds, true);
   });
 
-  async function doConfirm(homologation, rowsToDelete, userReviewed = false) {
+  async function doConfirm(homologation, rowsToDelete, casingFixes = {}, spellingFixes = {}, shownRowIds = [], userReviewed = false) {
     confirmBtn.innerHTML = '<span class="spinner"></span> Generando Excel...';
     confirmBtn.disabled = true;
 
-    const payload = { ...buildPayload(), homologation, rows_to_delete: rowsToDelete, user_reviewed: userReviewed };
+    const payload = { ...buildPayload(), homologation, rows_to_delete: rowsToDelete, shown_row_ids: shownRowIds, casing_fixes: casingFixes, spelling_fixes: spellingFixes, user_reviewed: userReviewed };
 
     try {
       const res  = await fetch('/confirm', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
