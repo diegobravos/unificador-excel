@@ -744,6 +744,14 @@ def suggest_rule(detected_type):
     return {'rut': 'clean_rut', 'email': 'none', 'text': 'upper', 'other': 'none'}.get(detected_type, 'none')
 
 
+def remove_accents(value):
+    """Elimina tildes y diacríticos (á→a, é→e, ñ→n, ü→u, etc.)."""
+    return ''.join(
+        c for c in unicodedata.normalize('NFD', str(value))
+        if unicodedata.category(c) != 'Mn'
+    )
+
+
 # ── Formatting routes ──────────────────────────────────────────────────────────
 
 @app.route('/format/preview', methods=['POST'])
@@ -840,10 +848,10 @@ def format_confirm():
                 continue
             if rule == 'clean_rut':
                 df[col_name] = df[col_name].map(
-                    lambda v: clean_rut(v) if pd.notna(v) else v)
+                    lambda v: remove_accents(clean_rut(v)) if pd.notna(v) else v)
             else:
                 df[col_name] = df[col_name].map(
-                    lambda v, r=rule: apply_casing(str(v), r) if pd.notna(v) else v)
+                    lambda v, r=rule: remove_accents(apply_casing(str(v), r)) if pd.notna(v) else v)
         preview_cols = list(df.columns)
         preview_rows = [[str(v) for v in row] for row in df.head(5).fillna('').values.tolist()]
         wb2 = Workbook()
@@ -882,6 +890,7 @@ def format_confirm():
                 if val is not None:
                     val_str = str(val) if not isinstance(val, str) else val
                     val = clean_rut(val_str) if rule == 'clean_rut' else apply_casing(val_str, rule)
+                    val = remove_accents(val)
             new_row.append(val)
         data_rows.append(new_row)
 
