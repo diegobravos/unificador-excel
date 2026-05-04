@@ -821,12 +821,19 @@ def format_preview():
 
     # Detectar hipervínculos con openpyxl
     hyperlinks_by_col = {}
+    total_hyperlinks  = 0
     ext = filename.rsplit('.', 1)[-1].lower()
     if ext != 'csv':
         try:
             wb = load_workbook(io.BytesIO(file_bytes))
             ws = wb[sheet_name] if sheet_name in wb.sheetnames else wb.active
             headers = [cell.value for cell in ws[1]]
+            # Conteo total en una sola pasada (incluye columnas sin encabezado)
+            total_hyperlinks = sum(
+                1 for row in ws.iter_rows(min_row=2)
+                for cell in row if cell.hyperlink is not None
+            )
+            # Conteo por columna para los badges de la tabla
             for col_idx, header in enumerate(headers, 1):
                 if header is None:
                     continue
@@ -864,11 +871,12 @@ def format_preview():
         columns.append(col_info)
 
     return jsonify({
-        'sheets':     sheets_info,
-        'sheet_name': sheet_name,
-        'columns':    columns,
-        'file_data':  file_data_b64,
-        'filename':   filename,
+        'sheets':             sheets_info,
+        'sheet_name':         sheet_name,
+        'columns':            columns,
+        'file_data':          file_data_b64,
+        'filename':           filename,
+        'total_hyperlinks':   total_hyperlinks,
     })
 
 
@@ -964,8 +972,15 @@ def format_confirm():
     ws_src = wb_src[sheet_name] if sheet_name and sheet_name in wb_src.sheetnames else wb_src.active
 
     headers = [str(cell.value) if cell.value is not None else '' for cell in ws_src[1]]
+    rows_removed = 0
+
+    # Primera pasada — eliminar hipervínculos en todo el archivo
     hyperlinks_removed = 0
-    rows_removed       = 0
+    for row in ws_src.iter_rows():
+        for cell in row:
+            if cell.hyperlink is not None:
+                cell.hyperlink = None
+                hyperlinks_removed += 1
 
     # Leer todas las filas aplicando correcciones de correo y reglas de formato
     data_rows = []
@@ -988,8 +1003,6 @@ def format_confirm():
                 emails_fixed += 1
 
             if rule != 'none':
-                if cell.hyperlink is not None and email_fix is None:
-                    hyperlinks_removed += 1
                 if val is not None:
                     val_str = str(val) if not isinstance(val, str) else val
                     val = clean_rut(val_str) if rule == 'clean_rut' else apply_casing(val_str, rule)

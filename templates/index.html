@@ -637,6 +637,7 @@
   <!-- PASO 3: Configurar reglas por columna -->
   <div class="card hidden" id="fmt-rules-card">
     <h2><span class="step" style="background:#1565c0;">3</span> Configurar reglas por columna</h2>
+    <div id="fmt-hyperlinks-total-note" class="hidden" style="background:#fff3e0;border:1px solid #ffcc80;border-radius:8px;padding:10px 14px;font-size:0.85rem;color:#7a4400;margin-bottom:14px;"></div>
     <div style="overflow-x:auto;">
       <table class="fmt-table">
         <thead>
@@ -1451,6 +1452,7 @@
   let fmtColumns          = [];
   let fmtPendingDl        = null;
   let fmtEmailCorrections = {};  // {col_name: [{row, action, new_value?}]}
+  let fmtTotalHyperlinks  = 0;
 
   // ── Formatter element refs ─────────────────────────────────────────
   const fmtDropZone    = document.getElementById('fmt-drop-zone');
@@ -1514,10 +1516,11 @@
       const res  = await fetch('/format/preview', { method: 'POST', body: form });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error al analizar');
-      fmtFileData  = data.file_data;
-      fmtFilename  = data.filename;
-      fmtSheetName = data.sheet_name;
-      fmtColumns   = data.columns;
+      fmtFileData         = data.file_data;
+      fmtFilename         = data.filename;
+      fmtSheetName        = data.sheet_name;
+      fmtColumns          = data.columns;
+      fmtTotalHyperlinks  = data.total_hyperlinks || 0;
       if (Object.keys(data.sheets).length > 1) {
         fmtSheetSel.innerHTML = Object.entries(data.sheets).map(([sn, info]) =>
           `<option value="${sn}"${sn === data.sheet_name ? ' selected' : ''}>${sn} (${info.rows} filas)</option>`
@@ -1550,8 +1553,9 @@
       });
       const data = await res.json();
       if (!res.ok) return;
-      fmtSheetName = data.sheet_name;
-      fmtColumns   = data.columns;
+      fmtSheetName       = data.sheet_name;
+      fmtColumns         = data.columns;
+      fmtTotalHyperlinks = data.total_hyperlinks || 0;
     }
     renderFmtRules(fmtColumns);
     fmtRulesCard.classList.remove('hidden');
@@ -1566,6 +1570,15 @@
   function renderFmtRules(columns) {
     fmtRulesBody.innerHTML   = '';
     fmtEmailCorrections      = {};
+
+    // Nota de hipervínculos totales
+    const hlNote = document.getElementById('fmt-hyperlinks-total-note');
+    if (fmtTotalHyperlinks > 0) {
+      hlNote.textContent = `ℹ️ Se eliminarán ${fmtTotalHyperlinks.toLocaleString()} hipervínculo${fmtTotalHyperlinks > 1 ? 's' : ''} del archivo al formatear`;
+      hlNote.classList.remove('hidden');
+    } else {
+      hlNote.classList.add('hidden');
+    }
     const typeLabels  = { text: 'Texto', rut: 'RUT/RUN', email: 'Email', other: 'Otro' };
     const typeClasses = { text: 'fmt-type-text', rut: 'fmt-type-rut', email: 'fmt-type-email', other: 'fmt-type-other' };
 
