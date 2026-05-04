@@ -337,6 +337,45 @@
     }
     .fmt-preview-table td { padding: 8px 10px; border-bottom: 1px solid #f0f0f0; white-space: nowrap; }
     .fmt-preview-table tr:last-child td { border-bottom: none; }
+
+    /* Correos inválidos */
+    .fmt-email-badge {
+      background: #fce8e6; color: #c62828; border: 1px solid #f4b8b2;
+      font-size: 0.72rem; padding: 3px 9px; border-radius: 12px;
+      cursor: pointer; font-weight: 500; white-space: nowrap;
+      display: inline-flex; align-items: center; gap: 4px;
+    }
+    .fmt-email-badge:hover { background: #f4b8b2; }
+    .fmt-email-panel-row td { padding: 0 !important; }
+    .fmt-email-panel {
+      padding: 12px 14px; background: #fffaf9;
+      border-top: 1px solid #f4b8b2;
+    }
+    .fmt-email-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    .fmt-email-table th {
+      background: #fce8e6; padding: 7px 10px; text-align: left;
+      border-bottom: 1px solid #f4b8b2; color: #7a2020; white-space: nowrap;
+    }
+    .fmt-email-table td { padding: 7px 10px; border-bottom: 1px solid #f8e0de; vertical-align: middle; }
+    .fmt-email-table tr:last-child td { border-bottom: none; }
+    .fmt-email-input {
+      padding: 4px 10px; border: 1px solid #ccc; border-radius: 6px;
+      font-size: 0.82rem; outline: none; width: 100%; max-width: 280px;
+    }
+    .fmt-email-input.valid   { border-color: #43a047; background: #f1faf1; }
+    .fmt-email-input.invalid { border-color: #e53935; background: #fff5f5; }
+    .fmt-email-input.deleted { border-color: #bbb; background: #f5f5f5; color: #aaa; text-decoration: line-through; }
+    .fmt-email-footer {
+      margin-top: 10px; font-size: 0.8rem; color: #555;
+      display: flex; gap: 16px; flex-wrap: wrap;
+    }
+    .fmt-email-footer span { display: flex; align-items: center; gap: 4px; }
+    .btn-delete-email {
+      background: none; border: none; cursor: pointer; color: #e53935;
+      font-size: 1rem; padding: 2px 6px; border-radius: 4px; line-height: 1;
+    }
+    .btn-delete-email:hover { background: #fce8e6; }
+    .btn-delete-email.deleted { color: #aaa; }
   </style>
 </head>
 <body>
@@ -606,6 +645,7 @@
             <th>Tipo detectado</th>
             <th>Hipervínculos</th>
             <th>Regla</th>
+            <th>Correos inválidos</th>
           </tr>
         </thead>
         <tbody id="fmt-rules-body"></tbody>
@@ -629,8 +669,14 @@
   <div class="card hidden" id="fmt-result-card">
     <h2><span class="step" style="background:#1565c0;">4</span> Resultado</h2>
     <div class="result-box">
-      <p id="fmt-hyperlinks-summary" style="font-size:0.875rem;color:#444;margin-bottom:12px;display:none;">
+      <p id="fmt-hyperlinks-summary" style="font-size:0.875rem;color:#444;margin-bottom:8px;display:none;">
         <strong id="fmt-hyperlinks-stat">0</strong> hipervínculos eliminados en total
+      </p>
+      <p id="fmt-emails-fixed-summary" style="font-size:0.875rem;color:#444;margin-bottom:8px;display:none;">
+        ✏️ Se corrigieron <strong id="fmt-emails-fixed-stat">0</strong> correos electrónicos
+      </p>
+      <p id="fmt-rows-removed-summary" style="font-size:0.875rem;color:#c62828;margin-bottom:8px;display:none;">
+        🗑️ Se eliminaron <strong id="fmt-rows-removed-stat">0</strong> filas por correos inválidos
       </p>
       <p style="font-size:0.85rem;font-weight:600;color:#444;margin-bottom:10px;">Vista previa (primeras 5 filas):</p>
       <div style="overflow-x:auto;margin-bottom:16px;" id="fmt-preview-wrap"></div>
@@ -1398,12 +1444,13 @@
   });
 
   // ── Formatter state ────────────────────────────────────────────────
-  let fmtFile      = null;
-  let fmtFileData  = null;
-  let fmtFilename  = null;
-  let fmtSheetName = null;
-  let fmtColumns   = [];
-  let fmtPendingDl = null;
+  let fmtFile             = null;
+  let fmtFileData         = null;
+  let fmtFilename         = null;
+  let fmtSheetName        = null;
+  let fmtColumns          = [];
+  let fmtPendingDl        = null;
+  let fmtEmailCorrections = {};  // {col_name: [{row, action, new_value?}]}
 
   // ── Formatter element refs ─────────────────────────────────────────
   const fmtDropZone    = document.getElementById('fmt-drop-zone');
@@ -1512,11 +1559,16 @@
     fmtRulesCard.scrollIntoView({ behavior: 'smooth' });
   });
 
+  // ── Regex estricto para validación de correo (mismo que backend) ──────────────
+  const _EMAIL_STRICT_RE = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/;
+
   // ── Renderizar tabla de reglas ─────────────────────────────────────
   function renderFmtRules(columns) {
-    fmtRulesBody.innerHTML = '';
+    fmtRulesBody.innerHTML   = '';
+    fmtEmailCorrections      = {};
     const typeLabels  = { text: 'Texto', rut: 'RUT/RUN', email: 'Email', other: 'Otro' };
     const typeClasses = { text: 'fmt-type-text', rut: 'fmt-type-rut', email: 'fmt-type-email', other: 'fmt-type-other' };
+
     columns.forEach(col => {
       const tr = document.createElement('tr');
       const sr = col.suggested_rule || 'none';
@@ -1545,13 +1597,146 @@
       const linkCell = col.hyperlinks_found > 0
         ? `<span class="fmt-link-badge">⚠️ ${col.hyperlinks_found} — se eliminarán</span>`
         : '<span style="color:#ccc;font-size:0.8rem;">—</span>';
+
+      // Celda de correos inválidos
+      const invalidCount = col.invalid_emails || 0;
+      const emailCell = (col.detected_type === 'email' && invalidCount > 0)
+        ? `<span class="fmt-email-badge" data-col="${col.name}">⚠️ ${invalidCount} correo${invalidCount > 1 ? 's' : ''} inválido${invalidCount > 1 ? 's' : ''} — ver detalle</span>`
+        : '<span style="color:#ccc;font-size:0.8rem;">—</span>';
+
       tr.innerHTML = `
         <td style="font-weight:500;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${col.name}">${col.name}</td>
         <td><span class="fmt-type-badge ${typeClasses[col.detected_type] || 'fmt-type-other'}">${typeLabels[col.detected_type] || col.detected_type}</span></td>
         <td>${linkCell}</td>
-        <td>${ruleCell}</td>`;
+        <td>${ruleCell}</td>
+        <td>${emailCell}</td>`;
       fmtRulesBody.appendChild(tr);
+
+      // Panel de detalle de correos inválidos
+      if (col.detected_type === 'email' && invalidCount > 0) {
+        const colKey = col.name;
+
+        // Inicializar estado: todas las filas con acción "keep"
+        fmtEmailCorrections[colKey] = (col.invalid_rows || []).map(r => ({
+          row:       r.row,
+          action:    'keep',
+          new_value: r.value,
+        }));
+
+        const panelTr = document.createElement('tr');
+        panelTr.className = 'fmt-email-panel-row hidden';
+        panelTr.dataset.panelFor = colKey;
+        const panelTd = document.createElement('td');
+        panelTd.colSpan = 5;
+
+        const panel = document.createElement('div');
+        panel.className = 'fmt-email-panel';
+
+        // Tabla interna
+        const tbl = document.createElement('table');
+        tbl.className = 'fmt-email-table';
+        tbl.innerHTML = `<thead><tr><th>Fila</th><th>Correo</th><th>Acción</th></tr></thead>`;
+        const tbody = tbl.createTBody();
+
+        (col.invalid_rows || []).forEach((inv, i) => {
+          const row = tbody.insertRow();
+          row.dataset.rowIndex = i;
+
+          const tdFila = row.insertCell();
+          tdFila.textContent = inv.row;
+          tdFila.style.color = '#888';
+
+          const tdCorreo = row.insertCell();
+          const input = document.createElement('input');
+          input.type  = 'text';
+          input.className = 'fmt-email-input invalid';
+          input.value = inv.value;
+          input.dataset.colKey   = colKey;
+          input.dataset.rowIndex = i;
+          input.addEventListener('input', () => {
+            const val = input.value.trim();
+            const corrState = fmtEmailCorrections[colKey][i];
+            if (corrState.action === 'delete') return;
+            if (_EMAIL_STRICT_RE.test(val)) {
+              input.className = 'fmt-email-input valid';
+              corrState.action    = 'fix';
+              corrState.new_value = val;
+            } else {
+              input.className = 'fmt-email-input invalid';
+              corrState.action    = 'keep';
+              corrState.new_value = val;
+            }
+            updateEmailFooter(colKey, panel);
+          });
+          tdCorreo.appendChild(input);
+
+          const tdAccion = row.insertCell();
+          const delBtn = document.createElement('button');
+          delBtn.className = 'btn-delete-email';
+          delBtn.title     = 'Eliminar fila';
+          delBtn.textContent = '🗑️';
+          delBtn.addEventListener('click', () => {
+            const corrState = fmtEmailCorrections[colKey][i];
+            if (corrState.action === 'delete') {
+              // Revertir eliminación
+              corrState.action    = 'keep';
+              corrState.new_value = inv.value;
+              input.value         = inv.value;
+              input.className     = 'fmt-email-input invalid';
+              input.disabled      = false;
+              delBtn.className    = 'btn-delete-email';
+              delBtn.title        = 'Eliminar fila';
+            } else {
+              corrState.action    = 'delete';
+              corrState.new_value = inv.value;
+              input.className     = 'fmt-email-input deleted';
+              input.disabled      = true;
+              delBtn.className    = 'btn-delete-email deleted';
+              delBtn.title        = 'Deshacer eliminación';
+            }
+            updateEmailFooter(colKey, panel);
+          });
+          tdAccion.appendChild(delBtn);
+        });
+
+        panel.appendChild(tbl);
+
+        // Footer de contadores
+        const footer = document.createElement('div');
+        footer.className = 'fmt-email-footer';
+        footer.dataset.footerFor = colKey;
+        panel.appendChild(footer);
+        updateEmailFooter(colKey, panel);
+
+        panelTd.appendChild(panel);
+        panelTr.appendChild(panelTd);
+        fmtRulesBody.appendChild(panelTr);
+
+        // Toggle del panel al hacer click en el badge
+        tr.querySelector('.fmt-email-badge').addEventListener('click', () => {
+          panelTr.classList.toggle('hidden');
+        });
+      }
     });
+  }
+
+  function updateEmailFooter(colKey, panel) {
+    const corrections = fmtEmailCorrections[colKey] || [];
+    const nFixed   = corrections.filter(c => c.action === 'fix').length;
+    const nDeleted = corrections.filter(c => c.action === 'delete').length;
+    const footer   = panel.querySelector(`[data-footer-for="${colKey}"]`);
+    if (!footer) return;
+    footer.innerHTML = '';
+    if (nFixed > 0) {
+      const s = document.createElement('span');
+      s.textContent = `✏️ ${nFixed} correo${nFixed > 1 ? 's' : ''} corregido${nFixed > 1 ? 's' : ''}`;
+      footer.appendChild(s);
+    }
+    if (nDeleted > 0) {
+      const s = document.createElement('span');
+      s.textContent = `🗑️ ${nDeleted} fila${nDeleted > 1 ? 's' : ''} se eliminarán`;
+      footer.appendChild(s);
+    }
   }
 
   // ── Previsualizar → /format/confirm ───────────────────────────────
@@ -1564,14 +1749,27 @@
     try {
       const res  = await fetch('/format/confirm', {
         method: 'POST', headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ file_data: fmtFileData, filename: fmtFilename, sheet_name: fmtSheetName, rules })
+        body: JSON.stringify({
+          file_data:         fmtFileData,
+          filename:          fmtFilename,
+          sheet_name:        fmtSheetName,
+          rules,
+          email_corrections: fmtEmailCorrections,
+        })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error al procesar');
       fmtPendingDl = data.output_data;
-      const hlRemoved = data.hyperlinks_removed || 0;
+      const hlRemoved     = data.hyperlinks_removed || 0;
+      const emailsFixed   = data.emails_fixed   || 0;
+      const rowsRemoved   = data.rows_removed   || 0;
       document.getElementById('fmt-hyperlinks-stat').textContent = hlRemoved.toLocaleString();
       document.getElementById('fmt-hyperlinks-summary').style.display = hlRemoved > 0 ? '' : 'none';
+      // Mostrar stats de correos
+      document.getElementById('fmt-emails-fixed-summary').style.display   = emailsFixed > 0 ? '' : 'none';
+      document.getElementById('fmt-emails-fixed-stat').textContent         = emailsFixed.toLocaleString();
+      document.getElementById('fmt-rows-removed-summary').style.display    = rowsRemoved > 0 ? '' : 'none';
+      document.getElementById('fmt-rows-removed-stat').textContent         = rowsRemoved.toLocaleString();
       const wrap = document.getElementById('fmt-preview-wrap');
       const tbl  = document.createElement('table');
       tbl.className = 'fmt-preview-table';

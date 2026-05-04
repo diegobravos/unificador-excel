@@ -731,8 +731,9 @@ def clean_rut(val):
     return re.sub(r'[^\d]', '', val)
 
 
-_RUT_RE   = re.compile(r'^\d{1,2}\.?\d{3}\.?\d{3}-?[\dkK]$')
-_EMAIL_RE = re.compile(r'^[\w\.-]+@[\w\.-]+\.\w+$')
+_RUT_RE             = re.compile(r'^\d{1,2}\.?\d{3}\.?\d{3}-?[\dkK]$')
+_EMAIL_RE           = re.compile(r'^[\w\.-]+@[\w\.-]+\.\w+$')
+_REGEX_EMAIL_STRICT = re.compile(r'^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$')
 
 
 def detect_column_type(series, col_name):
@@ -751,6 +752,24 @@ def detect_column_type(series, col_name):
     if series.dtype == object:
         return 'text'
     return 'other'
+
+
+def validate_emails(series):
+    """
+    Valida correos de una columna contra el regex estricto.
+    Retorna lista de {row: N, value: "..."} donde N es número de fila Excel
+    (encabezado = fila 1, primera dato = fila 2).
+    """
+    invalid = []
+    for idx, val in series.items():
+        if val is None or (isinstance(val, float) and pd.isna(val)):
+            continue
+        s = str(val).strip()
+        if not s:
+            continue
+        if not _REGEX_EMAIL_STRICT.match(s):
+            invalid.append({'row': int(idx) + 2, 'value': s})
+    return invalid
 
 
 def suggest_rule(detected_type):
@@ -830,13 +849,19 @@ def format_preview():
     for col in df.columns:
         col_str = str(col)
         dtype   = detect_column_type(df[col], col_str)
-        columns.append({
+        col_info = {
             'name':             col_str,
             'detected_type':    dtype,
             'suggested_rule':   suggest_rule(dtype),
             'sample_values':    df[col].dropna().astype(str).head(3).tolist(),
             'hyperlinks_found': hyperlinks_by_col.get(col_str, 0),
-        })
+        }
+        # Validar correos inválidos en columnas de tipo email
+        if dtype == 'email':
+            invalid_rows = validate_emails(df[col])
+            col_info['invalid_emails'] = len(invalid_rows)
+            col_info['invalid_rows']   = invalid_rows
+        columns.append(col_info)
 
     return jsonify({
         'sheets':     sheets_info,
@@ -859,11 +884,46 @@ def format_confirm():
     if not file_data:
         return jsonify({'error': 'Faltan datos del archivo'}), 400
 
-    file_bytes = base64.b64decode(file_data)
-    ext        = filename.rsplit('.', 1)[-1].lower()
+    file_bytes        = base64.b64decode(file_data)
+    ext               = filename.rsplit('.', 1)[-1].lower()
+    email_corrections = body.get('email_corrections', {})  # {col: [{row, action, new_value?}]}
+
+    # Construir estructuras de correcciones de correo (índice 0-based = row - 2)
+    email_rows_to_delete = set()   # índices 0-based de filas a eliminar
+    email_fixes_by_col   = {}      # {col_name: {idx_0based: new_value}}
+    emails_fixed         = 0
+
+    for col_name, corrections in email_corrections.items():
+        for c in corrections:
+            row_excel = c.get('row')
+            action    = c.get('action', 'keep')
+            if row_excel is None:
+                continue
+            idx = int(row_excel) - 2
+            if action == 'delete':
+                email_rows_to_delete.add(idx)
+            elif action == 'fix':
+                new_val = c.get('new_value', '')
+                if new_val and _REGEX_EMAIL_STRICT.match(str(new_val).strip()):
+                    email_fixes_by_col.setdefault(col_name, {})[idx] = str(new_val).strip()
 
     if ext == 'csv':
         df = read_file_from_bytes(file_bytes, filename)
+
+        # Aplicar correcciones de correo antes del casing
+        for col_name, fixes in email_fixes_by_col.items():
+            if col_name not in df.columns:
+                continue
+            for idx, new_val in fixes.items():
+                if idx in df.index:
+                    df.at[idx, col_name] = new_val
+                    emails_fixed += 1
+
+        # Eliminar filas marcadas
+        rows_removed = len([i for i in email_rows_to_delete if i in df.index])
+        if email_rows_to_delete:
+            df = df.drop(index=[i for i in email_rows_to_delete if i in df.index])
+
         for col_name, rule in rules.items():
             if rule == 'none' or col_name not in df.columns:
                 continue
@@ -893,6 +953,8 @@ def format_confirm():
         return jsonify({
             'output_data':        base64.b64encode(out.read()).decode('utf-8'),
             'hyperlinks_removed': 0,
+            'emails_fixed':       emails_fixed,
+            'rows_removed':       rows_removed,
             'preview_columns':    preview_cols,
             'preview_rows':       preview_rows,
         })
@@ -903,17 +965,30 @@ def format_confirm():
 
     headers = [str(cell.value) if cell.value is not None else '' for cell in ws_src[1]]
     hyperlinks_removed = 0
+    rows_removed       = 0
 
-    # Leer todas las filas aplicando reglas
+    # Leer todas las filas aplicando correcciones de correo y reglas de formato
     data_rows = []
-    for row in ws_src.iter_rows(min_row=2, values_only=False):
+    for data_idx, row in enumerate(ws_src.iter_rows(min_row=2, values_only=False)):
+        # Saltar filas marcadas para eliminar
+        if data_idx in email_rows_to_delete:
+            rows_removed += 1
+            continue
+
         new_row = []
         for col_0idx, cell in enumerate(row):
             col_name = headers[col_0idx] if col_0idx < len(headers) else ''
-            rule = rules.get(col_name, 'none')
-            val  = cell.value
+            rule     = rules.get(col_name, 'none')
+            val      = cell.value
+
+            # Aplicar corrección de correo (antes del casing)
+            email_fix = email_fixes_by_col.get(col_name, {}).get(data_idx)
+            if email_fix is not None:
+                val = email_fix
+                emails_fixed += 1
+
             if rule != 'none':
-                if cell.hyperlink is not None:
+                if cell.hyperlink is not None and email_fix is None:
                     hyperlinks_removed += 1
                 if val is not None:
                     val_str = str(val) if not isinstance(val, str) else val
@@ -949,6 +1024,8 @@ def format_confirm():
     return jsonify({
         'output_data':        base64.b64encode(out.read()).decode('utf-8'),
         'hyperlinks_removed': hyperlinks_removed,
+        'emails_fixed':       emails_fixed,
+        'rows_removed':       rows_removed,
         'preview_columns':    preview_columns,
         'preview_rows':       preview_rows,
     })
