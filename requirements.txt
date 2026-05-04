@@ -2,3 +2,5 @@ flask==3.0.3
 pandas==2.2.2
 openpyxl==3.1.5
 pyspellchecker==0.8.1
+supabase
+python-dotenv

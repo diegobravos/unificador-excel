@@ -11,6 +11,8 @@ from openpyxl.utils import get_column_letter
 import json
 import math
 
+from logger import log_event
+
 app = Flask(__name__, template_folder='templates')
 
 
@@ -495,6 +497,7 @@ def upload_files():
     all_styles  = {}
     file_data_list = []
     file_info   = []
+    files_log   = []
 
     for f in files:
         if not f or not f.filename:
@@ -517,6 +520,7 @@ def upload_files():
                 'sheets':        sheets_info,
                 'default_sheet': default_sheet,
             })
+            files_log.append({'name': f.filename, 'size_kb': round(len(file_bytes) / 1024, 2)})
 
             styles = extract_header_styles(file_bytes, f.filename, sheet_name=default_sheet)
             for col, style in styles.items():
@@ -527,6 +531,8 @@ def upload_files():
 
     if not file_data_list:
         return jsonify({'error': 'Ningún archivo válido fue cargado'}), 400
+
+    log_event(action='upload', ip=request.remote_addr, files=files_log, mode='unificar')
 
     return jsonify({
         'column_styles': all_styles,
@@ -635,6 +641,14 @@ def confirm():
     merged = merged[final_cols]
 
     output_b64 = _write_excel(merged, final_cols, column_styles)
+
+    log_event(
+        action='confirm',
+        ip=request.remote_addr,
+        files=[{'name': fd['name'], 'size_kb': 0} for fd in file_data_list],
+        mode='unificar',
+        rows=len(merged),
+    )
 
     return jsonify({
         'output_data':        output_b64,
@@ -779,6 +793,13 @@ def format_preview():
     if not sheet_name:
         sheet_name = next(iter(sheets_info))
 
+    log_event(
+        action='upload',
+        ip=request.remote_addr,
+        files=[{'name': filename, 'size_kb': round(len(file_bytes) / 1024, 2)}],
+        mode='formatear',
+    )
+
     # Detectar hipervínculos con openpyxl
     hyperlinks_by_col = {}
     ext = filename.rsplit('.', 1)[-1].lower()
@@ -862,6 +883,13 @@ def format_confirm():
         out = io.BytesIO()
         wb2.save(out)
         out.seek(0)
+        log_event(
+            action='confirm',
+            ip=request.remote_addr,
+            files=[{'name': filename, 'size_kb': 0}],
+            mode='formatear',
+            rows=len(df),
+        )
         return jsonify({
             'output_data':        base64.b64encode(out.read()).decode('utf-8'),
             'hyperlinks_removed': 0,
@@ -911,6 +939,13 @@ def format_confirm():
     out = io.BytesIO()
     wb_new.save(out)
     out.seek(0)
+    log_event(
+        action='confirm',
+        ip=request.remote_addr,
+        files=[{'name': filename, 'size_kb': 0}],
+        mode='formatear',
+        rows=len(data_rows),
+    )
     return jsonify({
         'output_data':        base64.b64encode(out.read()).decode('utf-8'),
         'hyperlinks_removed': hyperlinks_removed,
