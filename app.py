@@ -682,6 +682,234 @@ def merge_files():
     })
 
 
+# ── Formatting helpers ─────────────────────────────────────────────────────────
+
+_PARTICLES = {'de', 'del', 'la', 'las', 'los', 'y', 'en', 'a', 'el', 'un', 'una', 'por', 'con'}
+
+
+def apply_casing(value, rule):
+    """Aplica transformación de texto según la regla."""
+    if not isinstance(value, str):
+        value = str(value)
+    if rule == 'upper':
+        return value.upper()
+    if rule == 'lower':
+        return value.lower()
+    if rule == 'title':
+        words = value.split()
+        result = []
+        for i, w in enumerate(words):
+            if i > 0 and w.lower() in _PARTICLES:
+                result.append(w.lower())
+            else:
+                result.append(w[0].upper() + w[1:].lower() if w else w)
+        return ' '.join(result)
+    return value
+
+
+def clean_rut(val):
+    """Limpia RUT: elimina puntos, guión y dígito verificador."""
+    val = str(val).strip().replace('.', '').replace(' ', '')
+    if '-' in val:
+        val = val.rsplit('-', 1)[0]
+    elif val:
+        val = val[:-1]  # sin guion: el último caracter es el DV
+    return re.sub(r'[^\d]', '', val)
+
+
+_RUT_RE   = re.compile(r'^\d{1,2}\.?\d{3}\.?\d{3}-?[\dkK]$')
+_EMAIL_RE = re.compile(r'^[\w\.-]+@[\w\.-]+\.\w+$')
+
+
+def detect_column_type(series, col_name):
+    """Detecta el tipo de columna: 'rut', 'email', 'text' u 'other'."""
+    name_lower = col_name.lower()
+    if 'rut' in name_lower or 'run' in name_lower:
+        return 'rut'
+    non_null = series.dropna().astype(str)
+    if len(non_null) > 0:
+        if non_null.apply(lambda x: bool(_RUT_RE.match(x.strip()))).mean() > 0.7:
+            return 'rut'
+        if non_null.apply(lambda x: bool(_EMAIL_RE.match(x.strip()))).mean() > 0.5:
+            return 'email'
+    if pd.to_numeric(series, errors='coerce').notna().mean() > 0.8:
+        return 'other'
+    if series.dtype == object:
+        return 'text'
+    return 'other'
+
+
+def suggest_rule(detected_type):
+    """Sugiere la regla de formato por defecto según el tipo de columna."""
+    return {'rut': 'clean_rut', 'email': 'none', 'text': 'upper', 'other': 'none'}.get(detected_type, 'none')
+
+
+# ── Formatting routes ──────────────────────────────────────────────────────────
+
+@app.route('/format/preview', methods=['POST'])
+def format_preview():
+    """Analiza un archivo y retorna tipos de columna e hipervínculos detectados."""
+    if request.content_type and 'multipart' in request.content_type:
+        f = request.files.get('file')
+        if not f or not f.filename:
+            return jsonify({'error': 'No se envió archivo'}), 400
+        ext = f.filename.rsplit('.', 1)[-1].lower()
+        if ext not in ('xlsx', 'xls', 'csv'):
+            return jsonify({'error': 'Formato no soportado'}), 400
+        file_bytes    = f.read()
+        filename      = f.filename
+        sheet_name    = request.form.get('sheet_name') or None
+        file_data_b64 = base64.b64encode(file_bytes).decode('utf-8')
+    else:
+        body          = request.get_json()
+        file_data_b64 = body.get('file_data')
+        filename      = body.get('filename', 'archivo.xlsx')
+        sheet_name    = body.get('sheet_name') or None
+        file_bytes    = base64.b64decode(file_data_b64)
+
+    sheets_info = read_all_sheets_info(file_bytes, filename)
+    if not sheet_name:
+        sheet_name = next(iter(sheets_info))
+
+    # Detectar hipervínculos con openpyxl
+    hyperlinks_by_col = {}
+    ext = filename.rsplit('.', 1)[-1].lower()
+    if ext != 'csv':
+        try:
+            wb = load_workbook(io.BytesIO(file_bytes))
+            ws = wb[sheet_name] if sheet_name in wb.sheetnames else wb.active
+            headers = [cell.value for cell in ws[1]]
+            for col_idx, header in enumerate(headers, 1):
+                if header is None:
+                    continue
+                count = sum(
+                    1 for row in ws.iter_rows(min_row=2, min_col=col_idx, max_col=col_idx)
+                    for cell in row if cell.hyperlink is not None
+                )
+                hyperlinks_by_col[str(header)] = count
+            wb.close()
+        except Exception:
+            pass
+
+    # Detectar tipos de columna con pandas
+    try:
+        df = read_file_from_bytes(file_bytes, filename, sheet_name=sheet_name)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+    columns = []
+    for col in df.columns:
+        col_str = str(col)
+        dtype   = detect_column_type(df[col], col_str)
+        columns.append({
+            'name':             col_str,
+            'detected_type':    dtype,
+            'suggested_rule':   suggest_rule(dtype),
+            'sample_values':    df[col].dropna().astype(str).head(3).tolist(),
+            'hyperlinks_found': hyperlinks_by_col.get(col_str, 0),
+        })
+
+    return jsonify({
+        'sheets':     sheets_info,
+        'sheet_name': sheet_name,
+        'columns':    columns,
+        'file_data':  file_data_b64,
+        'filename':   filename,
+    })
+
+
+@app.route('/format/confirm', methods=['POST'])
+def format_confirm():
+    """Aplica reglas de formato y retorna el archivo procesado."""
+    body       = request.get_json()
+    file_data  = body.get('file_data')
+    filename   = body.get('filename', 'archivo.xlsx')
+    sheet_name = body.get('sheet_name') or None
+    rules      = body.get('rules', {})
+
+    if not file_data:
+        return jsonify({'error': 'Faltan datos del archivo'}), 400
+
+    file_bytes = base64.b64decode(file_data)
+    ext        = filename.rsplit('.', 1)[-1].lower()
+
+    if ext == 'csv':
+        df = read_file_from_bytes(file_bytes, filename)
+        for col_name, rule in rules.items():
+            if rule == 'none' or col_name not in df.columns:
+                continue
+            if rule == 'clean_rut':
+                df[col_name] = df[col_name].map(
+                    lambda v: clean_rut(v) if pd.notna(v) else v)
+            else:
+                df[col_name] = df[col_name].map(
+                    lambda v, r=rule: apply_casing(str(v), r) if pd.notna(v) else v)
+        preview_cols = list(df.columns)
+        preview_rows = [[str(v) for v in row] for row in df.head(5).fillna('').values.tolist()]
+        wb2 = Workbook()
+        ws2 = wb2.active
+        ws2.append(preview_cols)
+        for row in df.itertuples(index=False):
+            ws2.append(list(row))
+        out = io.BytesIO()
+        wb2.save(out)
+        out.seek(0)
+        return jsonify({
+            'output_data':        base64.b64encode(out.read()).decode('utf-8'),
+            'hyperlinks_removed': 0,
+            'preview_columns':    preview_cols,
+            'preview_rows':       preview_rows,
+        })
+
+    # xlsx / xls: leer fuente con openpyxl, escribir resultado en nuevo Workbook
+    wb_src = load_workbook(io.BytesIO(file_bytes))
+    ws_src = wb_src[sheet_name] if sheet_name and sheet_name in wb_src.sheetnames else wb_src.active
+
+    headers = [str(cell.value) if cell.value is not None else '' for cell in ws_src[1]]
+    hyperlinks_removed = 0
+
+    # Leer todas las filas aplicando reglas
+    data_rows = []
+    for row in ws_src.iter_rows(min_row=2, values_only=False):
+        new_row = []
+        for col_0idx, cell in enumerate(row):
+            col_name = headers[col_0idx] if col_0idx < len(headers) else ''
+            rule = rules.get(col_name, 'none')
+            val  = cell.value
+            if rule != 'none':
+                if cell.hyperlink is not None:
+                    hyperlinks_removed += 1
+                if val is not None:
+                    val_str = str(val) if not isinstance(val, str) else val
+                    val = clean_rut(val_str) if rule == 'clean_rut' else apply_casing(val_str, rule)
+            new_row.append(val)
+        data_rows.append(new_row)
+
+    # Escribir en nuevo Workbook
+    wb_new = Workbook()
+    ws_new = wb_new.active
+    ws_new.append(headers)
+    for row in data_rows:
+        ws_new.append(row)
+
+    valid_indices   = [i for i, h in enumerate(headers) if h]
+    preview_columns = [headers[i] for i in valid_indices]
+    preview_rows    = [
+        [str(r[i]) if i < len(r) and r[i] is not None else '' for i in valid_indices]
+        for r in data_rows[:5]
+    ]
+
+    out = io.BytesIO()
+    wb_new.save(out)
+    out.seek(0)
+    return jsonify({
+        'output_data':        base64.b64encode(out.read()).decode('utf-8'),
+        'hyperlinks_removed': hyperlinks_removed,
+        'preview_columns':    preview_columns,
+        'preview_rows':       preview_rows,
+    })
+
+
 if __name__ == '__main__':
     import os
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))

@@ -4,7 +4,7 @@
   <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Unificador de Planillas Excel de Diego Bravo 🤩</title>
+  <title>El Ayudante de Excel de Diego Bravo 🤩</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: Arial, sans-serif; background: #f0f4f0; color: #333; min-height: 100vh; }
@@ -291,16 +291,76 @@
     .alert { padding: 12px 16px; border-radius: 8px; font-size: 0.875rem; margin-top: 12px; }
     .alert-error { background: #fce8e6; color: #c62828; border: 1px solid #f4b8b2; }
     .action-row { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+
+    /* ── Mode tabs ──────────────────────────────────────────────────── */
+    .mode-tabs { margin-top: 14px; display: flex; gap: 4px; align-items: flex-end; }
+    .tab-btn {
+      padding: 8px 20px; border: none; border-radius: 8px;
+      font-size: 0.875rem; font-weight: 600; cursor: pointer;
+      background: #e5e7eb; color: #374151;
+      transition: background 0.2s, color 0.2s;
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .tab-btn:hover      { background: #d1d5db; }
+    .tab-btn.tab-active { background: #1f2937; color: #ffffff; }
+
+    /* ── Formatter container ────────────────────────────────────────── */
+    #formatter-container {
+      max-width: 900px; margin: 32px auto; padding: 0 16px;
+      display: flex; flex-direction: column; gap: 24px;
+    }
+    .fmt-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .fmt-table th {
+      background: #f5faf3; padding: 10px 12px; text-align: left;
+      border-bottom: 2px solid #d4e4d4; color: #444; white-space: nowrap;
+    }
+    .fmt-table td { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+    .fmt-table tr:last-child td { border-bottom: none; }
+    .fmt-rule-select {
+      padding: 6px 10px; border: 1px solid #c0d4c0; border-radius: 6px;
+      font-size: 0.82rem; outline: none; background: white;
+    }
+    .fmt-rule-select:focus { border-color: #217346; }
+    .fmt-type-badge { font-size: 0.72rem; padding: 2px 8px; border-radius: 12px; font-weight: 500; }
+    .fmt-type-text  { background: #e8f5e9; color: #2e7d32; }
+    .fmt-type-rut   { background: #e3f2fd; color: #1565c0; }
+    .fmt-type-email { background: #ede9fe; color: #5b21b6; }
+    .fmt-type-other { background: #f5f5f5; color: #757575; }
+    .fmt-link-badge {
+      background: #fff3e0; color: #e65100; border: 1px solid #ffcc80;
+      font-size: 0.72rem; padding: 2px 8px; border-radius: 12px;
+    }
+    .fmt-preview-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+    .fmt-preview-table th {
+      background: #f5faf3; padding: 8px 10px; text-align: left;
+      border-bottom: 1px solid #d4e4d4; white-space: nowrap; color: #555;
+    }
+    .fmt-preview-table td { padding: 8px 10px; border-bottom: 1px solid #f0f0f0; white-space: nowrap; }
+    .fmt-preview-table tr:last-child td { border-bottom: none; }
   </style>
 </head>
 <body>
 
 <header>
-  <h1>Unificador de Planillas Excel de Diego Bravo 🤩</h1>
+  <h1>El Ayudante de Excel de Diego Bravo 🤩</h1>
   <p>Sube múltiples archivos, elige hojas y columnas — el formato original se conserva</p>
+  <div class="mode-tabs">
+    <button id="tab-unifier" class="tab-btn tab-active">
+      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M3 7h18M3 12h18M3 17h8"/>
+      </svg>
+      Unificar
+    </button>
+    <button id="tab-formatter" class="tab-btn">
+      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>
+      </svg>
+      Formatear
+    </button>
+  </div>
 </header>
 
-<main>
+<main id="unifier-container">
 
   <!-- PASO 1: Upload -->
   <div class="card">
@@ -490,6 +550,97 @@
   </div>
 
 </main>
+
+<div id="formatter-container" class="hidden">
+
+  <!-- PASO 1: Subir archivo -->
+  <div class="card">
+    <h2><span class="step" style="background:#1565c0;">1</span> Sube tu archivo</h2>
+    <div class="drop-zone" id="fmt-drop-zone">
+      <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round"
+          d="M12 16v-8m0 0-3 3m3-3 3 3M4.75 17.25A3.75 3.75 0 0 0 8.5 21h7a3.75 3.75 0 0 0 3.75-3.75V8.25L14 3H8.5A3.75 3.75 0 0 0 4.75 6.75v10.5Z"/>
+      </svg>
+      <p>Arrastra un archivo aquí o <span id="fmt-browse-btn">haz clic para seleccionar</span></p>
+      <p style="font-size:0.78rem;color:#999;margin-top:6px;">Formatos: .xlsx, .xls, .csv</p>
+    </div>
+    <input type="file" id="fmt-file-input" accept=".xlsx,.xls,.csv" />
+    <div id="fmt-file-list"></div>
+    <div class="action-row">
+      <button class="btn btn-primary" id="fmt-analyze-btn" disabled>
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <circle cx="11" cy="11" r="8"/>
+          <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.35-4.35"/>
+        </svg>
+        Analizar
+      </button>
+    </div>
+    <div id="fmt-upload-error" class="alert alert-error hidden"></div>
+  </div>
+
+  <!-- PASO 2: Seleccionar hoja -->
+  <div class="card hidden" id="fmt-sheet-card">
+    <h2><span class="step" style="background:#1565c0;">2</span> Selecciona la hoja</h2>
+    <div class="dedup-row">
+      <label for="fmt-sheet-select">Hoja:</label>
+      <select id="fmt-sheet-select"></select>
+    </div>
+    <div class="action-row">
+      <button class="btn btn-primary" id="fmt-sheet-continue">
+        Continuar
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 18l6-6-6-6"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- PASO 3: Configurar reglas por columna -->
+  <div class="card hidden" id="fmt-rules-card">
+    <h2><span class="step" style="background:#1565c0;">3</span> Configurar reglas por columna</h2>
+    <div style="overflow-x:auto;">
+      <table class="fmt-table">
+        <thead>
+          <tr>
+            <th>Columna</th>
+            <th>Tipo detectado</th>
+            <th>Hipervínculos</th>
+            <th>Regla</th>
+          </tr>
+        </thead>
+        <tbody id="fmt-rules-body"></tbody>
+      </table>
+    </div>
+    <div class="action-row" style="margin-top:20px;">
+      <button class="btn btn-analyze" id="fmt-preview-btn">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+        </svg>
+        Previsualizar
+      </button>
+    </div>
+    <div id="fmt-preview-error" class="alert alert-error hidden"></div>
+  </div>
+
+  <!-- PASO 4: Resultado -->
+  <div class="card hidden" id="fmt-result-card">
+    <h2><span class="step" style="background:#1565c0;">4</span> Resultado</h2>
+    <div class="result-box">
+      <p id="fmt-hyperlinks-summary" style="font-size:0.875rem;color:#444;margin-bottom:12px;display:none;">
+        <strong id="fmt-hyperlinks-stat">0</strong> hipervínculos eliminados en total
+      </p>
+      <p style="font-size:0.85rem;font-weight:600;color:#444;margin-bottom:10px;">Vista previa (primeras 5 filas):</p>
+      <div style="overflow-x:auto;margin-bottom:16px;" id="fmt-preview-wrap"></div>
+      <button class="btn btn-download" id="fmt-download-btn">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2M8 12l4 4 4-4M12 4v12"/>
+        </svg>
+        Descargar Excel
+      </button>
+    </div>
+  </div>
+
+</div>
 
 <script>
   // ── Element refs ──────────────────────────────────────────────────
@@ -1221,6 +1372,242 @@
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
     a.href = url; a.download = 'planillas_unificadas.xlsx'; a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  // ── Mode switcher ─────────────────────────────────────────────────
+  const tabUnifier    = document.getElementById('tab-unifier');
+  const tabFormatter  = document.getElementById('tab-formatter');
+  const unifierCont   = document.getElementById('unifier-container');
+  const formatterCont = document.getElementById('formatter-container');
+
+  tabUnifier.addEventListener('click', () => {
+    tabUnifier.classList.add('tab-active');
+    tabFormatter.classList.remove('tab-active');
+    unifierCont.classList.remove('hidden');
+    formatterCont.classList.add('hidden');
+  });
+  tabFormatter.addEventListener('click', () => {
+    tabFormatter.classList.add('tab-active');
+    tabUnifier.classList.remove('tab-active');
+    formatterCont.classList.remove('hidden');
+    unifierCont.classList.add('hidden');
+  });
+
+  // ── Formatter state ────────────────────────────────────────────────
+  let fmtFile      = null;
+  let fmtFileData  = null;
+  let fmtFilename  = null;
+  let fmtSheetName = null;
+  let fmtColumns   = [];
+  let fmtPendingDl = null;
+
+  // ── Formatter element refs ─────────────────────────────────────────
+  const fmtDropZone    = document.getElementById('fmt-drop-zone');
+  const fmtFileInput   = document.getElementById('fmt-file-input');
+  const fmtBrowseBtn   = document.getElementById('fmt-browse-btn');
+  const fmtFileList    = document.getElementById('fmt-file-list');
+  const fmtAnalyzeBtn  = document.getElementById('fmt-analyze-btn');
+  const fmtUploadErr   = document.getElementById('fmt-upload-error');
+  const fmtSheetCard   = document.getElementById('fmt-sheet-card');
+  const fmtSheetSel    = document.getElementById('fmt-sheet-select');
+  const fmtSheetCont   = document.getElementById('fmt-sheet-continue');
+  const fmtRulesCard   = document.getElementById('fmt-rules-card');
+  const fmtRulesBody   = document.getElementById('fmt-rules-body');
+  const fmtPreviewBtn  = document.getElementById('fmt-preview-btn');
+  const fmtPreviewErr  = document.getElementById('fmt-preview-error');
+  const fmtResultCard  = document.getElementById('fmt-result-card');
+  const fmtDownloadBtn = document.getElementById('fmt-download-btn');
+
+  // ── Formatter drag & drop ──────────────────────────────────────────
+  fmtDropZone.addEventListener('dragover', e => { e.preventDefault(); fmtDropZone.classList.add('drag-over'); });
+  fmtDropZone.addEventListener('dragleave', () => fmtDropZone.classList.remove('drag-over'));
+  fmtDropZone.addEventListener('drop', e => {
+    e.preventDefault(); fmtDropZone.classList.remove('drag-over');
+    const files = [...e.dataTransfer.files];
+    if (files.length) setFmtFile(files[0]);
+  });
+  fmtBrowseBtn.addEventListener('click', e => { e.stopPropagation(); fmtFileInput.click(); });
+  fmtDropZone.addEventListener('click', () => fmtFileInput.click());
+  fmtFileInput.addEventListener('change', () => {
+    if (fmtFileInput.files[0]) setFmtFile(fmtFileInput.files[0]);
+    fmtFileInput.value = '';
+  });
+
+  function setFmtFile(f) {
+    const ext = f.name.split('.').pop().toLowerCase();
+    if (!['xlsx','xls','csv'].includes(ext)) return;
+    fmtFile = f;
+    fmtFileList.innerHTML = `
+      <div class="file-item">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M9 12h6m-6 4h6M5 6.75A3.75 3.75 0 0 1 8.75 3H14l5 5v12.25A3.75 3.75 0 0 1 15.25 24H8.75A3.75 3.75 0 0 1 5 20.25V6.75Z"/>
+        </svg>
+        <span class="file-name">${f.name}</span>
+        <span class="file-meta">${(f.size/1024).toFixed(1)} KB</span>
+      </div>`;
+    fmtAnalyzeBtn.disabled = false;
+    fmtSheetCard.classList.add('hidden');
+    fmtRulesCard.classList.add('hidden');
+    fmtResultCard.classList.add('hidden');
+  }
+
+  // ── Analizar archivo ───────────────────────────────────────────────
+  fmtAnalyzeBtn.addEventListener('click', async () => {
+    fmtUploadErr.classList.add('hidden');
+    fmtAnalyzeBtn.innerHTML = '<span class="spinner"></span> Analizando...';
+    fmtAnalyzeBtn.disabled = true;
+    const form = new FormData();
+    form.append('file', fmtFile);
+    try {
+      const res  = await fetch('/format/preview', { method: 'POST', body: form });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al analizar');
+      fmtFileData  = data.file_data;
+      fmtFilename  = data.filename;
+      fmtSheetName = data.sheet_name;
+      fmtColumns   = data.columns;
+      if (Object.keys(data.sheets).length > 1) {
+        fmtSheetSel.innerHTML = Object.entries(data.sheets).map(([sn, info]) =>
+          `<option value="${sn}"${sn === data.sheet_name ? ' selected' : ''}>${sn} (${info.rows} filas)</option>`
+        ).join('');
+        fmtSheetCard.classList.remove('hidden');
+        fmtRulesCard.classList.add('hidden');
+        fmtSheetCard.scrollIntoView({ behavior: 'smooth' });
+      } else {
+        fmtSheetCard.classList.add('hidden');
+        renderFmtRules(data.columns);
+        fmtRulesCard.classList.remove('hidden');
+        fmtRulesCard.scrollIntoView({ behavior: 'smooth' });
+      }
+    } catch (e) {
+      fmtUploadErr.textContent = e.message;
+      fmtUploadErr.classList.remove('hidden');
+    } finally {
+      fmtAnalyzeBtn.innerHTML = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.35-4.35"/></svg> Analizar`;
+      fmtAnalyzeBtn.disabled = false;
+    }
+  });
+
+  // ── Continuar desde selección de hoja ─────────────────────────────
+  fmtSheetCont.addEventListener('click', async () => {
+    const selected = fmtSheetSel.value;
+    if (selected !== fmtSheetName) {
+      const res  = await fetch('/format/preview', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ file_data: fmtFileData, filename: fmtFilename, sheet_name: selected })
+      });
+      const data = await res.json();
+      if (!res.ok) return;
+      fmtSheetName = data.sheet_name;
+      fmtColumns   = data.columns;
+    }
+    renderFmtRules(fmtColumns);
+    fmtRulesCard.classList.remove('hidden');
+    fmtResultCard.classList.add('hidden');
+    fmtRulesCard.scrollIntoView({ behavior: 'smooth' });
+  });
+
+  // ── Renderizar tabla de reglas ─────────────────────────────────────
+  function renderFmtRules(columns) {
+    fmtRulesBody.innerHTML = '';
+    const typeLabels  = { text: 'Texto', rut: 'RUT/RUN', email: 'Email', other: 'Otro' };
+    const typeClasses = { text: 'fmt-type-text', rut: 'fmt-type-rut', email: 'fmt-type-email', other: 'fmt-type-other' };
+    columns.forEach(col => {
+      const tr = document.createElement('tr');
+      const sr = col.suggested_rule || 'none';
+      const sel = (val) => sr === val ? ' selected' : '';
+      let ruleCell;
+      if (col.detected_type === 'text') {
+        ruleCell = `<select class="fmt-rule-select" data-col="${col.name}">
+          <option value="none"${sel('none')}>Sin cambio</option>
+          <option value="title"${sel('title')}>Title Case</option>
+          <option value="upper"${sel('upper')}>MAYÚSCULAS</option>
+          <option value="lower"${sel('lower')}>minúsculas</option>
+        </select>`;
+      } else if (col.detected_type === 'email') {
+        ruleCell = `<select class="fmt-rule-select" data-col="${col.name}">
+          <option value="none"${sel('none')}>Sin cambio</option>
+          <option value="lower"${sel('lower')}>minúsculas</option>
+        </select>`;
+      } else if (col.detected_type === 'rut') {
+        ruleCell = `<select class="fmt-rule-select" data-col="${col.name}">
+          <option value="none"${sel('none')}>Sin cambio</option>
+          <option value="clean_rut"${sel('clean_rut')}>Limpiar RUT (sin puntos ni DV)</option>
+        </select>`;
+      } else {
+        ruleCell = '<span style="color:#bbb;font-size:0.8rem;">Sin regla aplicable</span>';
+      }
+      const linkCell = col.hyperlinks_found > 0
+        ? `<span class="fmt-link-badge">⚠️ ${col.hyperlinks_found} — se eliminarán</span>`
+        : '<span style="color:#ccc;font-size:0.8rem;">—</span>';
+      tr.innerHTML = `
+        <td style="font-weight:500;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${col.name}">${col.name}</td>
+        <td><span class="fmt-type-badge ${typeClasses[col.detected_type] || 'fmt-type-other'}">${typeLabels[col.detected_type] || col.detected_type}</span></td>
+        <td>${linkCell}</td>
+        <td>${ruleCell}</td>`;
+      fmtRulesBody.appendChild(tr);
+    });
+  }
+
+  // ── Previsualizar → /format/confirm ───────────────────────────────
+  fmtPreviewBtn.addEventListener('click', async () => {
+    fmtPreviewErr.classList.add('hidden');
+    fmtPreviewBtn.innerHTML = '<span class="spinner"></span> Procesando...';
+    fmtPreviewBtn.disabled = true;
+    const rules = {};
+    document.querySelectorAll('.fmt-rule-select').forEach(sel => { rules[sel.dataset.col] = sel.value; });
+    try {
+      const res  = await fetch('/format/confirm', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ file_data: fmtFileData, filename: fmtFilename, sheet_name: fmtSheetName, rules })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al procesar');
+      fmtPendingDl = data.output_data;
+      const hlRemoved = data.hyperlinks_removed || 0;
+      document.getElementById('fmt-hyperlinks-stat').textContent = hlRemoved.toLocaleString();
+      document.getElementById('fmt-hyperlinks-summary').style.display = hlRemoved > 0 ? '' : 'none';
+      const wrap = document.getElementById('fmt-preview-wrap');
+      const tbl  = document.createElement('table');
+      tbl.className = 'fmt-preview-table';
+      const thead = tbl.createTHead();
+      const hRow  = thead.insertRow();
+      data.preview_columns.forEach(c => {
+        const th = document.createElement('th');
+        th.textContent = c;
+        hRow.appendChild(th);
+      });
+      const tbody = tbl.createTBody();
+      data.preview_rows.forEach(row => {
+        const tr = tbody.insertRow();
+        row.forEach(v => { const td = tr.insertCell(); td.textContent = v; });
+      });
+      wrap.innerHTML = '';
+      wrap.appendChild(tbl);
+      fmtResultCard.classList.remove('hidden');
+      fmtResultCard.scrollIntoView({ behavior: 'smooth' });
+    } catch (e) {
+      fmtPreviewErr.textContent = e.message;
+      fmtPreviewErr.classList.remove('hidden');
+    } finally {
+      fmtPreviewBtn.innerHTML = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> Previsualizar`;
+      fmtPreviewBtn.disabled = false;
+    }
+  });
+
+  // ── Descargar resultado formateado ─────────────────────────────────
+  fmtDownloadBtn.addEventListener('click', () => {
+    if (!fmtPendingDl) return;
+    const bytes = atob(fmtPendingDl);
+    const arr   = new Uint8Array(bytes.length);
+    for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+    const blob = new Blob([arr], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    const base = fmtFilename ? fmtFilename.replace(/\.[^.]+$/, '') : 'archivo';
+    a.href = url; a.download = `${base}_formateado.xlsx`; a.click();
     URL.revokeObjectURL(url);
   });
 
